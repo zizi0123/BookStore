@@ -1,435 +1,332 @@
 #include "unrolllinklist.h"
-
+#include <algorithm>
 #include <utility>
 
-std::vector<int> recycle_bin; //储存现在是空的的位置
-
-//std::set<block_node> block_info;//用于储存节点信息
-
-char *min(char *a, char *b) {
-    return strcmp(a, b) < 0 ? a : b;
-}
-
-char *max(char *a, char *b) {
-    return strcmp(a, b) > 0 ? a : b;
-}
-
-
-long to_block_pos(int pos){
-    return sizeof(int)+pos*sizeof (block_node);
-}
-
-long to_array_pos(int pos){
-    return (pos-2)*maxsize*sizeof (data);
-}
-
-int array_pos_to_pos(long array_pos){
-    return array_pos/sizeof (data)+2;
-}
-
-int block_pos_to_pos(long block_pos){
-    return (block_pos-sizeof(int))/sizeof(block_node);
-}
+std::vector<long> recycle_bin; //储存现在是空的的位置
 
 
 data::data(const char *_index, int _value) : value(_value) {
     strcpy(index, _index);
 }
 
-block_node::block_node(long _next, long _last, int _pos) : next(_next), last(_last),pos(_pos){
-    size = 1;
-    strcpy(maximum, "");
-    strcpy(minimum, "");
+data &data::operator=(const data &x) {
+    if (this == &x) return *this;
+    value = x.value;
+    strcpy(index, x.index);
+    return *this;
 }
 
-block_node::~block_node() { //把这个地址放到回收站里 注意，在这里没法操作一个块状链表的快数
+bool operator<=(const data &x, const data &y) {
+    return (x < y || x == y);
 }
 
-void block_node::BlockMerge(block_node *y, const unroll_link &_unrollLink) {
-    this->next = y->next;
-    y->next->last = this;
 
-    data *temp = new data[y->size]; //进行处理：数据迁移
-    std::ifstream in;
-    std::ofstream out;
-    in.open(_unrollLink.);
-    in.seekg(y->pos);
-    for (int i = 0; i < y->size; ++i) {  //把y中的数据读到数组temp里
-        in.read(reinterpret_cast<char *>(temp + i), sizeof(data));
+data::data(const data &x) {
+    value = x.value;
+    strcpy(index, x.index);
+}
+
+bool operator<(const data &x, const data &y) {
+    if (strcmp(x.index, y.index) != 0) return strcmp(x.index, y.index) < 0;
+    return x.value < y.value;
+}
+
+bool operator==(const data &x, const data &y) {
+    return (strcmp(x.index, y.index) == 0 && x.value == y.value);
+}
+
+block_node::block_node(long _pos, int _size) : pos(_pos), size(_size) {}
+
+
+void unroll_link::BlockMerge(const long &block_num) {  //将第block_num与第block_num+1个合成为block_num
+
+    data *temp = new data[head_list[block_num + 1].size]; //进行处理：数据迁移
+    iof.seekg(head_list[block_num + 1].pos);
+    for (int i = 0; i < head_list[block_num + 1].size; ++i) {  //把y中的数据读到数组temp里
+        iof.read(reinterpret_cast<char *>(temp + i), sizeof(data));
     }
-    in.close();
-    out.open(_unrollLink.filename);
-    out.seekp(pos + size);
-    for (int i = 0; i < y->size; ++i) {
-        out.write(reinterpret_cast<char *>(temp + i), sizeof(data));
+    iof.seekp(head_list[block_num].pos + head_list[block_num].size * sizeof(data));
+    for (int i = 0; i < head_list[block_num + 1].size; ++i) {
+        iof.write(reinterpret_cast<char *>(temp + i), sizeof(data));
     }
-    out.close();
     delete[]temp;
-    this->size += y->size;
-    strcpy(this->maximum, y->maximum);
-    delete y;
+    head_list[block_num].size += head_list[block_num + 1].size;
+    head_list[block_num].maximum = head_list[block_num + 1].maximum;
+    recycle_bin.push_back(head_list[block_num + 1].pos);
+    head_list.erase(head_list.begin() + block_num + 1);
+    --block_size;
 }
 
-void block_node::BlockSplit(unroll_link &_unrollLink) {  //在this的后面新插入一个块,给this留下minsize个元素，从minsize-size个元素赋给y
-    int y_pos; //确定y的数组的起始位置
+void
+unroll_link::BlockSplit(const long &position) {  //在第position个块的后面新插入一个块,给第position个留下minsize个元素，从size-minsize开始的元素赋给y
+    long y_pos; //确定y的数组的起始位置
     if (!recycle_bin.empty()) {
         y_pos = recycle_bin.back();
         recycle_bin.pop_back();
     } else {
-        std::ifstream in(_unrollLink.filename);
-        in.seekg(sizeof(data) * _unrollLink.block_size);
-        _unrollLink.block_size++;
-        y_pos = array_pos_to_pos(in.tellg());
-        in.close();
+        iof.seekg(sizeof(data) * block_size * maxsize);
+        block_size++;
+        y_pos = iof.tellg();
     }
-    block_node y(next, to_block_pos(pos),y_pos); //需要新插入的块
-    std::ifstream in1(_unrollLink.filename);
-    block_node last_node,next_node;
-    in1.seekg(last);
-    in1.read(reinterpret_cast<char *>(&last_node),sizeof (block_node));
-    in1.seekg(next);
-    in1.read(reinterpret_cast<char *>(&next_node),sizeof (block_node));
-    next_node.last = to_block_pos(y_pos);
-    next = to_array_pos(y_pos);
-    y.size = size - minsize;
-    data this_max, y_min;
-    std::ifstream in(_unrollLink.filename);
-    in.seekg(to_array_pos(pos) + minsize * sizeof(data));
-    data *temp = new data[size - minsize];  //用temp承接需要被转移的数据
-    for (int i = 0; i < size - minsize; ++i) {
-        in.read(reinterpret_cast<char *>(temp + i), sizeof(data));
+    block_node y(y_pos, maxsize - minsize); //需要新插入的块
+    data this_max;
+    iof.seekg(head_list[position].pos + (minsize - 1) * sizeof(data));
+    iof.read(reinterpret_cast<char *>(&this_max), sizeof(data));
+    data *temp = new data[maxsize - minsize]; //读入需要迁移的信息
+    for (int i = 0; i < maxsize - minsize; ++i) {
+        iof.read(reinterpret_cast<char *>(temp + i), sizeof(data));
     }
-    in.seekg(to_array_pos(pos) + (minsize - 1) * sizeof(data));
-    in.read(reinterpret_cast<char *>(&this_max), sizeof(data)); //读入当前数组的新最大值
-    in.read(reinterpret_cast<char *>(&y_min), sizeof(data));  //读入下一个数组的最小值
-    in.close();
-    std::ofstream out(_unrollLink.filename);
-    out.seekp(to_array_pos(y.pos));
-    for (int i = 0; i < y.size; ++i) {
-        out.write(reinterpret_cast<char *>(temp + i), sizeof(data));
+    iof.seekp(y.pos);
+    for (int i = 0; i < maxsize - minsize; ++i) {
+        iof.write(reinterpret_cast<char *>(temp + i), sizeof(data));
     }
-    out.close();
+    y.maximum = temp[maxsize - minsize - 1];
+    y.minimum = temp[0];
+    head_list.insert(head_list.begin() + position + 1, y); //完成对新块的操作
     delete[]temp;
-    strcpy(y.maximum, maximum);
-    strcpy(maximum, this_max.index);
-    strcpy(y.minimum, y_min.index);
-    size = minsize;
-    std::ofstream out1(_unrollLink.node_filename);
-    out1.seekp(to_block_pos(last_node.pos));
-    out1.write(reinterpret_cast<char *>(&last_node),sizeof (block_node));
-    out1.seekp(to_block_pos(pos));
-    out1.write(reinterpret_cast<char *>(this),sizeof(block_node));
-    out1.seekp(to_block_pos(next_node.pos));
-    out1.write(reinterpret_cast<char *>(&next_node),sizeof(block_node));
-    out1.seekp(to_block_pos(y.pos));
-    out1.write(reinterpret_cast<char *>(&y),sizeof(block_node));
-    out1.close();
+    head_list[position].maximum = this_max;
+    head_list[position].size = minsize;
 }
 
-void block_node::InsertInArray(const data &_data, const unroll_link &unrollLink) { //无需考虑是否会裂块!
-    data *temp = new data[size];
-    std::ifstream in(unrollLink.filename);
-    in.seekg(to_array_pos(pos));
-    for (int i = 0; i < size; ++i) {
-        in.read(reinterpret_cast<char *>(temp + i), sizeof(data));
+void unroll_link::InsertInArray(const data &_data, const int &block_num) { //无需考虑是否会裂块!
+    data *temp = new data[head_list[block_num].size];
+    iof.seekg(head_list[block_num].pos);
+    for (int i = 0; i < head_list[block_num].size; ++i) {
+        iof.read(reinterpret_cast<char *>(temp + i), sizeof(data));
     }
-    in.close();
-
-    if (strcmp(_data.index, minimum) <= 0) { //在头端插入
-        std::ofstream out(unrollLink.filename);
-        out.seekp(to_array_pos(pos));
-        out.write(reinterpret_cast<const char *>(&_data),
-                  sizeof(data));   //因为传进来的_data是一个const &,所以不能解释成一个char *,应该解释成一个const char *
-        for (int i = 0; i < size; ++i) {
-            out.write(reinterpret_cast<char *>(temp + i), sizeof(data));
+    if (head_list[block_num].maximum < _data) {  //特殊情况：比最后maximum还大，插在最后
+        iof.seekp(head_list[block_num].pos + head_list[block_num].size * sizeof(data));
+        iof.write(reinterpret_cast<const char *>(&_data), sizeof(data));
+        head_list[block_num].maximum = _data;
+    } else {
+        long proper_pos = std::lower_bound(temp, temp + head_list[block_num].size - 1, _data) - temp;  //pos是这个数应该被插到的位置
+        iof.seekp(head_list[block_num].pos + proper_pos * sizeof(data));
+        iof.write(reinterpret_cast<const char *>(&_data), sizeof(data));
+        for (int j = proper_pos; j < head_list[block_num].size; ++j) {
+            iof.write(reinterpret_cast<char *>(temp + j), sizeof(data));
         }
-        out.close();
-        delete[] temp;
-        ++size;
-        strcpy(minimum, _data.index);
-        std::ofstream out1(unrollLink.node_filename);
-        out1.seekp(to_block_pos(pos));
-        out1.write(reinterpret_cast<char *>(this),sizeof (block_node));
-        out1.close();
+        if (_data < head_list[block_num].minimum) head_list[block_num].minimum = _data;
+        if (head_list[block_num].maximum < _data) head_list[block_num].maximum = _data;
+    }
+    head_list[block_num].size++;
+    delete[]temp;
+}
+
+void unroll_link::EraseInArray(long block_num, int position, data *temp) {
+    iof.seekp(head_list[block_num].pos + position * sizeof(data));
+    for (int i = position + 1; i < head_list[block_num].size; ++i) {
+        iof.write(reinterpret_cast<char *>(temp + i), sizeof(data));
+    }
+    if (head_list[block_num].size == 1) {  //如果删到了最后一个块
+        head_list.erase(head_list.begin() + block_num);
+        block_size--;
+        delete[]temp;
+        recycle_bin.push_back(head_list[block_num].pos);
         return;
     }
-    if (strcmp(_data.index, maximum) >= 0) { //在尾部插入
-        std::ofstream out(unrollLink.filename);
-        out.seekp(to_array_pos(pos) + sizeof(data) * size);
-        out.write(reinterpret_cast<const char *>(&_data), sizeof(data));
-        out.close();
-        delete[] temp;
-        ++size;
-        strcpy(maximum, _data.index);
-        std::ofstream out1(unrollLink.node_filename);
-        out1.seekp(to_block_pos(pos));
-        out1.write(reinterpret_cast<char *>(this),sizeof (block_node));
-        out1.close();
-        return;
+    if (position == 0) head_list[block_num].minimum = temp[1]; //更新最小值
+    if (position == head_list[block_num].size - 1) {  //更新最大值
+        head_list[block_num].maximum = temp[head_list[block_num].size - 2];
     }
-
-    int ii = 0;
-    for (int i = 0; i < size; ++i) {
-        if (strcmp(temp[i].index, _data.index) <= 0 && strcmp(temp[i + 1].index, _data.index) >= 0) {
-            ii = i;
-            break;
-        }
-    }
-    std::ofstream out(unrollLink.filename);
-    out.seekp(to_array_pos(pos) + (ii + 1) * sizeof(data));
-    out.write(reinterpret_cast<const char *>(&_data), sizeof(data));
-    for (int i = ii + 1; i < size; ++i) {
-        out.write(reinterpret_cast<char *>(temp + i), sizeof(data));
-    }
-    out.close();
     delete[] temp;
-    std::ofstream out1(unrollLink.node_filename);
-    out1.seekp(to_block_pos(pos));
-    out1.write(reinterpret_cast<char *>(this),sizeof (block_node));
-    out1.close();
-    ++size;
-}
-
-void block_node::EraseInArray(int position, data *temp_data, unroll_link &_unrollLink) {  //data里存了所有当前数组的数据
-    --size;
-    std::ofstream out(_unrollLink.filename),out1(_unrollLink.node_filename);
-    block_node last_node,next_node;
-    out.seekp(to_array_pos(pos)+position*sizeof (data));
-    out1.seekp(last);
-    out1.write(reinterpret_cast<char *>(&last_node),sizeof (block_node));
-    out1.seekp(next);
-    out1.write(reinterpret_cast<char *>(&next_node),sizeof (block_node));
-    for (int i = position + 1; i < size; ++i) {
-        out.write(reinterpret_cast<char *>(temp_data + i), sizeof(data));
-    }
-    out.close();
-    if (size == 0) {  //删到最后，直接把这个块给删掉
-        _unrollLink.block_size--;
-        last_node.next=next;
-        next_node.last=last;
-        recycle_bin.push_back(pos);
-    }else {
-        if (position == 0) strcpy(minimum, temp_data[1].index);
-        if (position == size - 1) strcpy(maximum, temp_data[size - 2].index);
-        delete[] temp_data;
-        if (size < minsize) {
-            if (next != to_block_pos(_unrollLink.tail.pos) && next_node.size > minsize) {//向下一个块借元素
-                data new_data;
-                std::ifstream in3(_unrollLink.filename);
-                in3.seekg(next);
-                in3.read(reinterpret_cast<char *>(&new_data), sizeof(data));
-                data temp[next_node.size-1];  //把下一个数组的剩余数据读进来，准备给下一个数组的数据集体向前移
-                for(int i=0;i<next_node.size-1;++i) in3.read(reinterpret_cast<char *>(temp+i),sizeof (data));
-                std::ofstream out3(_unrollLink.filename);
-                out3.seekp(to_array_pos(pos) + size * sizeof(data));
-                out3.write(reinterpret_cast<char *>(&new_data), sizeof(data));
-                out3.seekp(next);
-                for(int i=0;i<next_node.size-1;++i) out3.write(reinterpret_cast<char *>(temp+i),sizeof (data));
-                strcpy(maximum, new_data.index);
-                strcpy(next_node.minimum,temp[0].index);
-                size++;
-                next_node.size--;
-                out3.close();
-            } else if (last != to_block_pos(_unrollLink.head.pos) && last_node.size> minsize) { //向上一个块借元素
-                data temp[size+1],last_max;
-                std::ifstream in2(_unrollLink.filename);
-                in2.seekg(last+sizeof (data)*(last_node.size-2));
-                in2.read(reinterpret_cast<char *>(&last_max),sizeof (data));
-                in2.read(reinterpret_cast<char *>(temp), sizeof(data));
-                in2.seekg(to_array_pos(pos));
-                for (int i = 0; i < size; ++i) {
-                    in2.read(reinterpret_cast<char *>(temp + i + 1), sizeof(data));
-                }
-                in2.close();
-                std::ofstream out2(_unrollLink.filename);
-                out2.seekp(to_array_pos(pos));
-                for (int i = 0; i < size+1; ++i) {
-                    out2.write(reinterpret_cast<char *>(temp + i), sizeof(data));
-                }
-                strcpy(minimum, temp[0].index);
-                strcpy(last_node.maximum,last_max.index);
-                size++;
-                last_node.size--;
-                out2.close();
-            } else if (last != to_block_pos(_unrollLink.head.pos) && last_node.size == minsize) {
-                last_node.BlockMerge(this, _unrollLink);
-            } else if (next != to_block_pos(_unrollLink.tail.pos) && next_node.size == minsize) {
-                this->BlockMerge(&next_node, _unrollLink);
-            }
+    --head_list[block_num].size;
+    if (head_list[block_num].size >= minsize) return;
+    if (block_num != block_size - 1 && head_list[block_num + 1].size > minsize) {//向下一个块借元素
+        data *temp1 = new data[head_list[block_num + 1].size];
+        iof.seekg(head_list[block_num + 1].pos);
+        for (int i = 0; i < head_list[block_num + 1].size; ++i) {
+            iof.read(reinterpret_cast<char *>(temp1 + i), sizeof(data));
         }
-        std::ofstream out3(_unrollLink.node_filename);
-        out3.seekp(last);
-        out3.write(reinterpret_cast<char *>(&next_node),sizeof (data));
-        out3.seekp(to_block_pos(pos));
-        out3.write(reinterpret_cast<char *>(this),sizeof(data));
-        out3.seekp(next);
-        out3.write(reinterpret_cast<char *>(&last_node),sizeof (data));
+        iof.seekp(head_list[block_num].pos + head_list[block_num].size * sizeof(data));
+        iof.write(reinterpret_cast<char *>(temp1), sizeof(data));
+        iof.seekp(head_list[block_num + 1].pos);
+        for (int i = 1; i < head_list[block_num + 1].size; ++i) {
+            iof.write(reinterpret_cast<char *>(temp1 + i), sizeof(data));
+        }
+        head_list[block_num].maximum = temp1[0];
+        head_list[block_num + 1].minimum = temp1[1];
+        head_list[block_num].size++;
+        head_list[block_num + 1].size--;
+        delete[] temp1;
+    } else if (block_num > 0 && head_list[block_num - 1].size > minsize) { //向上一个块借元素
+        data *temp2 = new data[head_list[block_num].size + 1];
+        data last_max{};
+        iof.seekg(head_list[block_num - 1].pos + sizeof(data) * (head_list[block_num - 1].size - 2));
+        iof.read(reinterpret_cast<char *>(&last_max), sizeof(data));
+        iof.read(reinterpret_cast<char *>(temp2), sizeof(data));
+        iof.seekg(head_list[block_num].pos);
+        for (int i = 0; i < head_list[block_num].size; ++i) {
+            iof.read(reinterpret_cast<char *>(temp2 + i + 1), sizeof(data));
+        }
+        iof.seekp(head_list[block_num].pos);
+        for (int i = 0; i < head_list[block_num].size + 1; ++i) {
+            iof.write(reinterpret_cast<char *>(temp2 + i), sizeof(data));
+        }
+        head_list[block_num].minimum = temp2[0];
+        head_list[block_num - 1].maximum = last_max;
+        head_list[block_num].size++;
+        head_list[block_num - 1].size--;
+        delete[] temp2;
+    } else if (block_num != 0 && head_list[block_num - 1].size == minsize) {
+        this->BlockMerge(block_num - 1);
+    } else if (block_num != block_size - 1 && head_list[block_num + 1].size == minsize) {
+        this->BlockMerge(block_num);
     }
 }
 
 
 void unroll_link::InsertInBlock(const char *index, const int &value) {
-    char _index[70];
-    strcpy(_index, index);
-    data temp(_index, value);
-    if (block_size==0) {
-        block_node node(to_block_pos(tail.pos), to_block_pos(head.pos),2);
-        head.next= to_block_pos(node.pos);
-        tail.last= to_block_pos(node.pos);
+    data temp_data(index, value);
+    if (block_size == 0) {
+        block_node new_node(0, 1);
+        new_node.maximum = temp_data;  //注意，这里是调用了重载赋值运算符，不是复制构造函数
+        new_node.minimum = temp_data;
         block_size = 1;
-        strcpy(node.minimum, _index);
-        strcpy(node.maximum, _index);
-        node.size = 1;
-        std::ofstream out;
-        out.open(filename);
-        out.write(reinterpret_cast<char *>(&temp), sizeof(data));
-        out.close();
+        head_list.push_back(new_node);
+        iof.seekp(0);
+        iof.write(reinterpret_cast<char *>(&temp_data), sizeof(data));
     } else {
-        int try_result = TryFind(_index);
-        std::ifstream in(node_filename);
-        block_node try_result_block;
-        in.seekg(to_block_pos(try_result));
-        in.read(reinterpret_cast<char *>(&try_result_block),sizeof (block_node));
-        in.close();
-        try_result_block.InsertInArray(temp, *this);
-        if (try_result_block.size == maxsize) try_result_block.BlockSplit(*this);
+        int block_num = FindBlockNumIns(temp_data);
+        this->InsertInArray(temp_data, block_num);
+        if (head_list[block_num].size == maxsize) this->BlockSplit(block_num);
     }
 }
 
-int unroll_link::TryFind(const char *index) {
-    std::ifstream in(node_filename);
-    long temp=head.next;
-    while(temp!= to_block_pos(tail.pos)){
-        block_node temp_block;
-        in.seekg(temp);
-        in.read(reinterpret_cast<char *>(&temp_block),sizeof(block_size));
-        if (strcmp(index, temp_block.minimum) >= 0 && strcmp(index, temp_block.maximum) <= 0) {
-            in.close();
-            return block_pos_to_pos(temp);
-        }
-        temp=temp_block.next;
+int unroll_link::FindBlockNumIns(const data &x) {
+    if (block_size == 1) {
+        return 0;
     }
-    block_node head_next,tail_last;
-    in.seekg(head.next);
-    in.read(reinterpret_cast<char *>(&head_next),sizeof(block_node));
-    in.seekg(tail.last);
-    in.read(reinterpret_cast<char *>(&tail_last),sizeof(block_node));
-    in.close();
-    if (strcmp(index, head_next.minimum) < 0) { //应该插在第一个array的开头
-        return block_pos_to_pos(head.next);
+    for (int i = 0; i < block_size; ++i) {
+        if (x < head_list[i].maximum) return i;
     }
-    return block_pos_to_pos(tail.last);  //应该插在最后一个array的末尾
+    return block_size - 1;
 }
 
-std::vector<int> block_node::TryFindInArray(const char *index, unroll_link &unrollLink) const {
+std::vector<int> unroll_link::FindInArray(const std::vector<int> &block_num_vec, const char *index) {
     std::vector<int> ans;
-    std::ifstream in(unrollLink.filename);
-    in.seekg(pos);
-    data *temp = new data[size];
-    for (int i = 0; i < size; ++i) {
-        in.read(reinterpret_cast<char *>(temp + i), sizeof(data));
-    }
-    in.close();
-    bool if_find = false;
-    for (int i = 0; i < this->size; ++i) {
-        if (strcmp(temp[i].index, index) == 0) {
-            if_find = true;
-            ans.push_back(temp[i].value);
+    for (int it: block_num_vec) {
+        iof.seekg(head_list[it].pos);
+        data temp{};
+        for (int i = 0; i < head_list[it].size; ++i) {
+            iof.read(reinterpret_cast<char *>(&temp), sizeof(data));
+            if (strcmp(temp.index, index) == 0) {
+                ans.push_back(temp.value);
+            }
         }
     }
-    delete[]temp;
-    if (!if_find) ans.push_back(-1);
     return ans;
 }
-
-void unroll_link::EraseInBlock(const char *index, const int &value) {
-    if(block_size==0) return;
-    int try_result = TryFind(index);
-    std::ifstream in(filename),in1(node_filename);
-    in.seekg(to_array_pos(try_result));
-    in1.seekg(to_block_pos(try_result));
-    block_node temp_block; //这是需要被删数据的块
-    in1.read(reinterpret_cast<char *>(&temp_block),sizeof (block_node));
-    in1.close();
-    data *temp = new data[temp_block.size];
-    for (int i = 0; i < temp_block.size; ++i) {
-        in.read(reinterpret_cast<char *>(temp + i), sizeof(data));
+    void unroll_link::EraseInBlock(const char *index, const int &value) {
+        data temp_data(index, value);
+        long block_num = FindBlockNum(temp_data);  //这是要删掉元素的块位置
+        if (block_num == -1) return;
+        int pos = -1;   //这是在块中要被删掉的元素位置
+        iof.seekg(head_list[block_num].pos);
+        data *temp = new data[head_list[block_num].size];
+        for (int i = 0; i < head_list[block_num].size; ++i) {
+            iof.read(reinterpret_cast<char *>(temp + i), sizeof(data));
+            if (temp[i] == temp_data) pos = i;
+        }
+        if (pos == -1) {
+            delete[]temp;
+            return;
+        }
+        this->EraseInArray(block_num, pos, temp); //为了减少文件读写的次数，直接把temp数组指针传出去
     }
-    in.close();
-    int pos = -1;
-    for (int i = 0; i < temp_block.size; ++i) {
-        if (strcmp(temp[i].index, index) == 0 && temp[i].value == value) {
-            pos = i;
-            break;
+
+    std::string unroll_link::FindInBlock(const char *_index) {
+        std::string ans;
+        std::vector<int> block_num_vec = this->FindBlockNumFind(_index);
+        if (block_num_vec.empty()) return "null\n";
+        std::vector<int> value_vec = this->FindInArray(block_num_vec, _index);
+        if (value_vec.empty()) return "null\n";
+        for (const int &it: value_vec) {
+            ans += std::to_string(it);
+            ans += " ";
+        }
+        ans += "\n";
+//        ans = "   " + ans;
+//        ans = _index + ans;
+        return ans;
+    }
+
+    unroll_link::unroll_link(std::string
+    name, std::string
+    other_name) : filename(std::move(name)),
+            other_information_file(std::move(other_name))
+    {
+
+        std::ifstream in1(filename), in2(other_information_file);
+        if (!in2) {//如果没有打开成功，说明是初次使用系统，就创建这两个文件
+            std::ofstream out1(filename), out2(other_information_file);
+            block_size = 0;
+            recycle_size = 0;
+            out2.write(reinterpret_cast<char *>(&block_size), sizeof(int));
+            out2.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
+            out1.close();
+            out2.close();
+            iof.open(filename, std::fstream::in | std::fstream::out);
+            return;
+
+        } else {
+            in1.close();
+            iof.open(filename, std::fstream::in | std::fstream::out);
+            recycle_bin.clear();
+            in2.read(reinterpret_cast<char *>(&block_size), sizeof(int));//读入块的总数
+            for (int i = 0; i < block_size; ++i) {
+                block_node temp{};
+                in2.read(reinterpret_cast<char *>(&temp), sizeof(block_node));
+                head_list.push_back(temp);
+            }
+            in2.read(reinterpret_cast<char *>(&recycle_size), sizeof(int));
+            long temp;
+            for (int i = 0; i < recycle_size; ++i) {
+                in2.read(reinterpret_cast<char *>(&temp), sizeof(long));
+                recycle_bin.push_back(temp);
+            }
+            in2.close();
         }
     }
-    if (pos == -1) {
-        delete[]temp;
-        return;
-    }
-    temp_block.EraseInArray(pos, temp, *this); //data里面存着所有的当前数组的数据
-}
 
-std::string unroll_link::FindInBlock(const char *_index) {
-    std::string ans;
-    block_node *try_result = this->TryFind(_index);
-    std::vector<int> position = try_result->TryFindInArray(_index, *this);
-    if (position[0] == -1) return "null\n";
-    for (int &it: position) {
-        ans += std::to_string(it);
-        ans += " ";
-    }
-    ans += "\n";
-    return ans;
-}
-
-unroll_link::unroll_link(std::string name, std::string node_name, const std::string& recycle_name) : filename(std::move(name)),
-                                                                                              node_filename(std::move(node_name)),
-                                                                                              recycle_filename(
-                                                                                                      recycle_name) {
-    std::ifstream in1(filename), in2(node_filename), in3(recycle_filename);
-    if (!in1) {  //如果没有打开成功，说明是初次使用系统，就创建这三个文件
-        std::ofstream out1(filename), out2(node_filename), out3(recycle_filename);
-        out1.close();
-        block_size = 0;
+    unroll_link::~unroll_link()
+    {
+        std::ofstream out2(other_information_file);//用ofstream打开的时候会默认清空！
         out2.write(reinterpret_cast<char *>(&block_size), sizeof(int));
-        head=block_node(sizeof(int)+sizeof (block_node),-1,0);
-        tail=block_node(-2,sizeof (int),1);
-        out2.write(reinterpret_cast<char *>(&head),sizeof(block_size));//写入头结点
-        out2.write(reinterpret_cast<char *>(&tail),sizeof(block_size));//写入尾结点
+        for (int i = 0; i < block_size; ++i) {
+            out2.write(reinterpret_cast<char *>(&head_list[i]), sizeof(block_node));
+        }
+        recycle_size = (int)recycle_bin.size();
+        out2.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
+        for (long & i : recycle_bin) {
+            out2.write(reinterpret_cast<char *>(&i), sizeof(long));
+        }
         out2.close();
-        recycle_size = 0;
-        out3.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
-        out3.close();
-        return;
+        iof.close();
     }
-    in2.read(reinterpret_cast<char *>(&block_size), sizeof(int));
-    in2.read(reinterpret_cast<char *>(&head),sizeof(block_size));
-    in2.read(reinterpret_cast<char *>(&tail),sizeof (block_size));
 
-    in3.read(reinterpret_cast<char *>(&recycle_size), sizeof(int));
-    for (int i = 1; i <= recycle_size; ++i) {
-        int temp;
-        in3.read(reinterpret_cast<char *>(temp), sizeof(int));
-        recycle_bin.push_back(temp);
+    long unroll_link::FindBlockNum(const data &_data) {
+        if (block_size == 0) {
+            return -1;
+        }
+        for (int i = 0; i < head_list.size(); ++i) {
+            if (head_list[i].minimum <= _data && _data <= head_list[i].maximum) {
+                return i;
+            }
+        }
+        return -1;
     }
-    in1.close();
-    in2.close();
-    in3.close();
-}
 
-unroll_link::~unroll_link() {
-    std::ofstream out2(node_filename),out3(recycle_filename);
-    out2.write(reinterpret_cast<char *>(&block_size),sizeof (int));
-    out2.write(reinterpret_cast<char *>(&head),sizeof(block_node));
-    out2.write(reinterpret_cast<char *>(&tail),sizeof(block_node));
-    out2.close();
-    out3.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
-    for(auto & it:recycle_bin){
-        out3.write(reinterpret_cast<char *>(&it),sizeof (int));
+    std::vector<int> unroll_link::FindBlockNumFind(const char *_index) {
+        std::vector<int> ans;
+        for (int i = 0; i < head_list.size(); ++i) {
+            if (strcmp(head_list[i].minimum.index, _index) <= 0 && strcmp(head_list[i].maximum.index, _index) >= 0)
+                ans.push_back(i);
+        }
+        return ans;
     }
-    out3.close();
-}
+
+
+
 
 
 

@@ -9,86 +9,90 @@
 #include <iostream>
 #include <set>
 
-const int maxsize=300;
-const int minsize=150;
+const int maxsize = 30;
+const int minsize = 15;
+
 class unroll_link;
-class block_node;
 
 
-char *min(char *a,char *b);
+//char *min(char *a,char *b);
 
-char *max(char *a,char *b);
+//char *max(char *a,char *b);
 
-long to_block_pos(int pos);
-
-long to_array_pos(int pos);
-
-int array_pos_to_pos(long array_pos);
-
-int block_pos_to_pos(long block_pos);
-
-struct data{
+struct data {
     char index[70];
     int value;
-    data()=default;
-    data(const char *,int);
+
+    data() = default;
+
+    data(const char *, int);
+
+    data(const data &x);
+
+    data &operator=(const data &x);
 };
+
+bool operator<(const data &x, const data &y);
+
+bool operator==(const data &x,const data &y);
+
+bool operator<=(const data &x,const data &y);
+
 struct block_node {
 
-    long next;//下一个节点信息在node_file里的地址
-    long last;//上一个节点信息在node_file里的地址,注意不能直接存指针，因为一个内存地址可能随时改变，存在外存文件里是没有意义的。
-    int pos;//表示对应的数组存在外存的位置标号以及结点本身的位置标号（一一对应） //0-base
+    long pos;//表示对应的数组存在外存的位置 //0-base
     int size;//目前数组中元素的个数
-    char minimum [70];
-    char maximum [70];
-//    bool if_empty;
-    block_node()=default;
+    data minimum;
+    data maximum;
 
-    block_node(long _next, long _last,int  pos);
+    block_node(long _pos, int size);
 
-    ~block_node();
-
-    void BlockMerge(block_node *y,const unroll_link& _unrollLink); //将x和y合并成x,把y丢弃
-
-    void BlockSplit(unroll_link& _unrollLink);
-
-    std::vector<int> TryFindInArray(const char *index,unroll_link &unrollLink) const;
-
-    void InsertInArray(const data&_data,const unroll_link& _unrollLink);
-
-    void EraseInArray(int position,data * temp_data,unroll_link& _unrollLink);
+    block_node() = default;
 
 };
-class unroll_link{
+
+class unroll_link {
 private:
 
     friend struct block_node;
 
     const std::string filename;
-    const std::string node_filename;
-    const std::string recycle_filename;
-    block_node head;
-    block_node tail;
+    const std::string other_information_file;
     int block_size;
     int recycle_size;
+    std::vector<block_node> head_list;
+    std::fstream iof;
 
-    int TryFind(const char *index);
+    int FindBlockNumIns(const data &x);
+
+    std::vector<int> FindBlockNumFind(const char *_index);
+
+    long FindBlockNum(const data &index);
+
+    void InsertInArray(const data &_data, const int &);
+
+
+    void BlockSplit(const long &position);
+
+    void EraseInArray(long block_num, int position, data *temp_data);
+
+    void BlockMerge(const long &block_num); //将x和y合并成x,把y丢弃
+
+    std::vector<int> FindInArray(const std::vector<int> &block_num, const char *index);
+
 
 public:
-    unroll_link(std::string name,std::string node_name,const std::string& recyle_name);
+    unroll_link(std::string name, std::string other_name);
 
     ~unroll_link();
 
+    void InsertInBlock(const char *index, const int &value);
 
-    void InsertInBlock(const char *index,const int &value);
-
-    void EraseInBlock(const char *index,const int &value);
+    void EraseInBlock(const char *index, const int &value);
 
     std::string FindInBlock(const char *index);
 
 };
-
-
 
 
 #endif

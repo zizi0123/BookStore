@@ -1,7 +1,10 @@
 #include "unrolllinklist.h"
 #include <iostream>
 
+
 int main() {
+//    freopen("in","r",stdin);
+//    freopen("out","w",stdout);
     int num;
     std::cin >> num;
     unroll_link unroll_linkk("text", "other_information");
@@ -33,10 +36,17 @@ int main() {
             } else {
                 unroll_linkk.EraseInBlock(index, int_value);
             }
-        } else {
+        } else if(strcmp("find", info) == 0){
             char index[70];
-            strcpy(index, command + j1 + 1);
-            index[strlen(command) - j1 - 1] = '\0';
+            int k=j1+1;
+            while(true){
+                if(command[k]==' ' || command[k]=='\0' ||command[k]=='\n'){
+                    strncpy(index,command+j1+1,k-j1-1);
+                    index[k-j1-1] = '\0';
+                    break;
+                }
+                k++;
+            }
             std::string ans = unroll_linkk.FindInBlock(index);
             std::cout << ans;
         }
