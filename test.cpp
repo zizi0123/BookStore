@@ -4,12 +4,13 @@
 
 int main() {
 //    freopen("in","r",stdin);
-//    freopen("out","w",stdout);
+//    freopen("outtt","w",stdout);
     int num;
     std::cin >> num;
-    unroll_link unroll_linkk("text", "other_information");
+    UnrollLink unroll_link("text", "other_information");
     char x;
     std::cin.get(x);
+    int find4=0;
     for (int i = 1; i <= num; ++i) {
         char *command = new char[100];
         std::cin.getline(command, 100);
@@ -32,9 +33,9 @@ int main() {
             value[strlen(command) - (j1 + j2 + 2)] = '\0';
             int int_value = atoi(value);
             if (strcmp("insert", info) == 0) {
-                unroll_linkk.InsertInBlock(index, int_value);
+                unroll_link.InsertInBlock(index, int_value);
             } else {
-                unroll_linkk.EraseInBlock(index, int_value);
+                unroll_link.EraseInBlock(index, int_value);
             }
         } else if(strcmp("find", info) == 0){
             char index[70];
@@ -47,8 +48,8 @@ int main() {
                 }
                 k++;
             }
-            std::string ans = unroll_linkk.FindInBlock(index);
-            std::cout << ans;
+            std::string ans = unroll_link.FindInBlock(index);
+            std::cout<<ans;
         }
         delete[] command;
     }

@@ -9,15 +9,10 @@
 #include <iostream>
 #include <set>
 
-const int maxsize = 30;
-const int minsize = 15;
+const int maxsize = 600;
+const int minsize = 300;
 
-class unroll_link;
-
-
-//char *min(char *a,char *b);
-
-//char *max(char *a,char *b);
+class UnrollLink;
 
 struct data {
     char index[70];
@@ -51,7 +46,7 @@ struct block_node {
 
 };
 
-class unroll_link {
+class UnrollLink {
 private:
 
     friend struct block_node;
@@ -67,10 +62,9 @@ private:
 
     std::vector<int> FindBlockNumFind(const char *_index);
 
-    long FindBlockNum(const data &index);
+    long FindBlockNumEra(const data &index);
 
     void InsertInArray(const data &_data, const int &);
-
 
     void BlockSplit(const long &position);
 
@@ -82,9 +76,9 @@ private:
 
 
 public:
-    unroll_link(std::string name, std::string other_name);
+    UnrollLink(std::string name, std::string other_name);
 
-    ~unroll_link();
+    ~UnrollLink();
 
     void InsertInBlock(const char *index, const int &value);
 
