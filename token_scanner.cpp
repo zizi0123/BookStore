@@ -1,5 +1,4 @@
 #include "token_scanner.h"
-
 std::vector<std::string>ProcessKeywords(const char *keyword){
     int n=0;
     int start=0;
@@ -7,6 +6,7 @@ std::vector<std::string>ProcessKeywords(const char *keyword){
     for(int i=0;i<strlen(keyword);++i){
         std::string key;
         if(keyword[i]=='|' || i==strlen(keyword)-1){
+            if(i==strlen(keyword)-1) n++;  //补上一位
             if(n==0){  //，每一段key的程度至少是1
                 ans.clear();
                 return ans;
@@ -21,8 +21,9 @@ std::vector<std::string>ProcessKeywords(const char *keyword){
                 }
             }
             ans.push_back(key);
+        }else{
+            n++;
         }
-        n++;
     }
     return ans;
 }

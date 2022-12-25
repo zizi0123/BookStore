@@ -10,6 +10,9 @@
 class error : public std::exception {
 
 };
+class quit:public std::exception{
+
+};
 
 void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_status, TransactionLog &transaction_log,
                  const char *command);
@@ -45,8 +48,8 @@ void buy(const int &num, const std::vector<std::string> &instruct,  LogStatus &l
 
 int main() {
     std::filesystem::create_directory("file");
-    freopen("../bookstore-testcases/basic/testcase6.in","r",stdin);
-    freopen("out","w",stdout);
+//    freopen("../bookstore-testcases/basic/testcase8/1.in","r",stdin);
+//    freopen("out","w",stdout);
     BookFile book_file;
     AccountFile account_file;
     LogStatus log_status;
@@ -63,10 +66,19 @@ int main() {
             ProcessLine(book_file, account_file, log_status, transaction_log, command);
         } catch (error) {
             std::cout << "Invalid\n";
+        } catch (quit){
+            break;
         }
 //        std::cout<<'\n';
     }
+
+
+
 }
+
+
+
+
 
 void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_status, TransactionLog &transaction_log,
                  const char *command) {
@@ -99,10 +111,10 @@ void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_
     }
     if (instruct[0] == "quit") {
         if (num != 1) throw error();
-        exit(0);
+        throw quit();
     } else if (instruct[0] == "exit") {
         if (num != 1) throw error();
-        exit(0);
+        throw quit();
     } else if (instruct[0] == "su") {
         su(num, instruct, log_status, account_file);
     } else if (instruct[0] == "logout") {
@@ -357,13 +369,10 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
                 if_modify[3] = true;
             }
         } else if (info == "-price=") {
-//            std::cout<<"aa";
             if (if_modify[4]) throw error();
-            if (remain[0] == '0' && remain[1] != '.') throw error();
+            if (remain[0] == '0' && remain[1] != '.' && remain!="0") throw error();  //去除前导0，并且排除price=0的情况
             double price = stof(remain);
-//            std::cout<<"aa";
             book_file.modify_price(price, log_status);
-//            std::cout<<"bb";
             if_modify[4] = true;
         } else {
             throw error();

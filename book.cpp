@@ -13,17 +13,17 @@ BookFile::BookFile() : isbn_num("file/isbn", "file/isbn_o"), bookname_num("file/
         std::ofstream out("file/book_file");  //  如果还是第一次的话，创建这个文件
         out.close();
         iof.open("file/book_file", std::fstream::in | std::fstream::out);
-        book_total_num = 0;
+//        book_total_num = 0;
     } else {
         iof.open("file/book_file", std::fstream::in | std::fstream::out);
-        iof.read(reinterpret_cast<char *>(&book_total_num), sizeof(int));
+//        iof.read(reinterpret_cast<char *>(&book_total_num), sizeof(int));
     }
     in.close();
 }
 
 BookFile::~BookFile() {
     iof.seekp(0);
-    iof.write(reinterpret_cast<char *>(&book_total_num), sizeof(int));
+//    iof.write(reinterpret_cast<char *>(&book_total_num), sizeof(int));
     iof.close();
 }
 

@@ -47,7 +47,7 @@ public:
     UnrollLink author_num;
     UnrollLink keyword_num;
     std::fstream iof;   //读第num个位置的信息BookInfo
-    int book_total_num; //书籍的总量
+//    int book_total_num; //书籍的总量
 private:
 };
 
