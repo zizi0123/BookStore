@@ -51,9 +51,9 @@ void LogStatus::Select(const char *ISBN, BookFile &book_file) {
         book_file.iof.write(reinterpret_cast<char *>(&temp_book),sizeof (BookInfo));  //将新书的信息写入
 //        book_file.book_total_num++;
         book_file.isbn_num.InsertInBlock(ISBN,new_book_num);
-        book_file.keyword_num.InsertInBlock("",new_book_num);
-        book_file.author_num.InsertInBlock("",new_book_num);
-        book_file.bookname_num.InsertInBlock("",new_book_num);
+//        book_file.keyword_num.InsertInBlock("",new_book_num);
+//        book_file.author_num.InsertInBlock("",new_book_num);
+//        book_file.bookname_num.InsertInBlock("",new_book_num);
         login.back().booknum=new_book_num;
     }else{
         login.back().booknum=book_num[0];

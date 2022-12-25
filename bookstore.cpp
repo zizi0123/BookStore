@@ -48,7 +48,7 @@ void buy(const int &num, const std::vector<std::string> &instruct,  LogStatus &l
 
 int main() {
     std::filesystem::create_directory("file");
-//    freopen("../bookstore-testcases/basic/testcase8/1.in","r",stdin);
+//    freopen("../bookstore-testcases/basic/testcase8/2.in","r",stdin);
 //    freopen("out","w",stdout);
     BookFile book_file;
     AccountFile account_file;
