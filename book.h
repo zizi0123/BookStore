@@ -1,35 +1,55 @@
-//
-// Created by 86180 on 2022/12/9.
-//
 
-#ifndef _BOOKSTORE_BOOK_H
-#define _BOOKSTORE_BOOK_H
+#ifndef BOOKKKKKK
+#define BOOKKKKKK
 #include <iostream>
 #include <fstream>
-struct book_info{
+#include <iostream>
+#include <set>
+#include "unrolllinklist.h"
+#include "log_status.h"
+#include "token_scanner.h"
+#include "transaction_log.h"
+
+class LogStatus;
+class AccountFile;
+class TransactionLog;
+
+struct BookInfo{
     char ISBN[21];
     char name[61];
     char author[61];
-    char keywords[61];
+    char org_keywords [61];
+//    std::vector<std::string>keywords;
     int quantity;
     double price;
 };
-class book{
+
+bool operator<(const BookInfo&x,const BookInfo&y);
+class BookFile{
 public:
-    std::string show_ISBN(std::string ISBN);
-    std::string show_name(std::string name);
-    std::string show_author(std::string author);
-    std::string show_keyword(std::string keyword);
-    void buy(std::string ISBN,std::string quantity);
-    void modify_ISBN(std::string ISBN);
-    void modify_name(std::string name);
-    void modify_author(std::string author);
-    void modify_keyword(std::string keyword);
-    void modify_price(double prize);
-    void import(int quantity,double cost);
-
+    BookFile();
+    ~BookFile();
+    void show_ISBN(const char *ISBN);
+    void show_name(const char *name);
+    void show_author(const char *author);
+    void show_keyword(const char *keyword);
+    void show_all();
+//    std::vector<int> isbn_to_num(const char *);
+    void buy(const char *ISBN,const int &quantity,TransactionLog &);
+    void modify_ISBN(const char *ISBN,LogStatus& );
+    void modify_name(const char *name,LogStatus&);
+    void modify_author(const char *author,LogStatus&);
+    void modify_keyword(const char *keyword,LogStatus&);
+    void modify_price(double prize,LogStatus&);
+    void import(int quantity,double cost,LogStatus&,TransactionLog &);
+    UnrollLink isbn_num ;
+    UnrollLink bookname_num;
+    UnrollLink author_num;
+    UnrollLink keyword_num;
+    std::fstream iof;   //读第num个位置的信息BookInfo
+    int book_total_num; //书籍的总量
+private:
 };
-class book_file{
 
-};
-#endif //_BOOKSTORE_BOOK_H
+
+#endif //BOOKKKKKK

@@ -8,7 +8,6 @@
 #include <cstring>
 #include <iostream>
 #include <set>
-
 const int maxsize = 600;
 const int minsize = 300;
 
@@ -84,7 +83,7 @@ public:
 
     void EraseInBlock(const char *index, const int &value);
 
-    std::string FindInBlock(const char *index);
+    std::vector<int> FindInBlock(const char *index);
 
 };
 

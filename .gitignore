@@ -2,3 +2,6 @@
 cmake-build-debug/
 .idea/
 .obsidian/
+bookstore-testcases/
+code
+makedata/

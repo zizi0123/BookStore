@@ -233,18 +233,19 @@ void UnrollLink::EraseInArray(long block_num, int position, data *temp) {
     }
 }
 
-std::string UnrollLink::FindInBlock(const char *_index) {
+std::vector<int> UnrollLink::FindInBlock(const char *_index) {
     std::string ans;
     std::vector<int> block_num_vec = this->FindBlockNumFind(_index);
-    if (block_num_vec.empty()) return "null\n";
+    if (block_num_vec.empty()) return block_num_vec;
     std::vector<int> value_vec = this->FindInArray(block_num_vec, _index);
-    if (value_vec.empty()) return "null\n";
-    for (const int &it: value_vec) {
-        ans += std::to_string(it);
-        ans += " ";
-    }
-    ans += "\n";
-    return ans;
+    return value_vec;
+//    if (value_vec.empty()) return "null\n";
+//    for (const int &it: value_vec) {
+//        ans += std::to_string(it);
+//        ans += " ";
+//    }
+//    ans += "\n";
+//    return ans;
 }
 
 std::vector<int> UnrollLink::FindBlockNumFind(const char *_index) {
