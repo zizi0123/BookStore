@@ -112,9 +112,10 @@ void BookFile::show_keyword(const char *keyword) {
 }
 
 void BookFile::show_all() {
-    for (int i = 0; i < book_total_num; ++i) {
-        BookInfo temp_book;
-        iof.seekg(sizeof(int) + i * sizeof(BookInfo));
+    std::vector<int> pos=isbn_num.FindInBlock("");
+    for (int i :pos) {
+        BookInfo temp_book{};
+        iof.seekg(i);
         iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
         std::cout << temp_book.ISBN << '\t' << temp_book.name << '\t' << temp_book.author << '\t'<< temp_book.org_keywords << '\t';
         printf("%.2f", temp_book.price);
@@ -136,7 +137,7 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
         iof.seekp(num_vec[0]);
         iof.write(reinterpret_cast<char *>(&temp), sizeof(BookInfo));
         double earn = (double) quantity * temp.price;
-        std::cout << earn << '\n';
+        printf("%.2f\n",earn);
         transaction_log.earn(earn);
     } else {
         std::cout << "Invalid\n";
@@ -148,6 +149,10 @@ void BookFile::modify_ISBN(const char *ISBN, LogStatus &log_status) {
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
     if (strcmp(temp_book.ISBN, ISBN) == 0) {   //不允许将ISBN修改为原有的ISBN
+        std::cout << "Invalid\n";
+        return;
+    }
+    if(!isbn_num.FindInBlock(ISBN).empty()){  //任何两本书的ISBN不能重复
         std::cout << "Invalid\n";
         return;
     }
@@ -221,7 +226,7 @@ void BookFile::import(int quantity, double cost, LogStatus &log_status, Transact
     temp_book.quantity += quantity;
     iof.seekp(log_status.login.back().booknum);
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
-    transaction_log.cost(-cost);
+    transaction_log.cost(cost);
 }
 
 

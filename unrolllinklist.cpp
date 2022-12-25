@@ -251,8 +251,10 @@ std::vector<int> UnrollLink::FindInBlock(const char *_index) {
 std::vector<int> UnrollLink::FindBlockNumFind(const char *_index) {
     std::vector<int> ans;
     for (int i = 0; i < head_list.size(); ++i) {
-        if (strcmp(head_list[i].minimum.index, _index) <= 0 && strcmp(head_list[i].maximum.index, _index) >= 0)
+        if ((strcmp(head_list[i].minimum.index, _index) <= 0 && strcmp(head_list[i].maximum.index, _index) >= 0)||
+            strcmp(_index,"")==0) {
             ans.push_back(i);
+        }
     }
     return ans;
 }
@@ -264,7 +266,7 @@ std::vector<int> UnrollLink::FindInArray(const std::vector<int> &block_num_vec, 
         data temp{};
         for (int i = 0; i < head_list[it].size; ++i) {
             iof.read(reinterpret_cast<char *>(&temp), sizeof(data));
-            if (strcmp(temp.index, index) == 0) {
+            if (strcmp(temp.index, index) == 0 || strcmp(index,"")==0) {
                 ans.push_back(temp.value);
             }
         }

@@ -45,7 +45,7 @@ void buy(const int &num, const std::vector<std::string> &instruct,  LogStatus &l
 
 int main() {
     std::filesystem::create_directory("file");
-    freopen("../bookstore-testcases/basic/testcase4.in","r",stdin);
+    freopen("../bookstore-testcases/basic/testcase6.in","r",stdin);
     freopen("out","w",stdout);
     BookFile book_file;
     AccountFile account_file;
@@ -57,14 +57,14 @@ int main() {
         char command[1000];
         std::cin.getline(command, 1000);
         if(!std::cin) break;
-        std::cout<<count<<' ';
+//        std::cout<<count<<' ';
         command[strlen(command)] = '\0';
         try {
             ProcessLine(book_file, account_file, log_status, transaction_log, command);
         } catch (error) {
             std::cout << "Invalid\n";
         }
-        std::cout<<'\n';
+//        std::cout<<'\n';
     }
 }
 
@@ -75,7 +75,10 @@ void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_
     std::vector<std::string> instruct;
     bool flag_space= true;
     for(int i=0;i<strlen(command);++i){
-        if(command[i]!=' ') flag_space= false;
+        if(command[i]!=' ') {
+            flag_space= false;
+            break;
+        }
     }
     if(flag_space) return;  //全是空格，不输出信息
     for (int i = 0; i < strlen(command); ++i) {
@@ -114,7 +117,7 @@ void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_
     } else if (instruct[0] == "delete") {
         erase(num, instruct, account_file, log_status);
     } else if (instruct[0] == "show") {
-        if (instruct[1] == "finance") {
+        if (instruct.size()>1 && instruct[1] == "finance") {
             ShowFinance(num, instruct, log_status, transaction_log);
         } else {
             show(num, instruct,  log_status, book_file);
@@ -241,41 +244,42 @@ void show(const int &num, const std::vector<std::string> &instruct, LogStatus &l
     }
     if (num == 1) {
         book_file.show_all();
-    }
-    bool flag = false;
-    for (int i = 0; i < instruct[1].size(); ++i) {
-        if (instruct[1][i] == '=') {
-            flag = true;  //判断是否有等号出现
-            info = std::string(instruct[1], 0, i + 1);
-            remain = std::string(instruct[1], i + 1);
-            break;
-        }
-    }
-    if (!flag) throw error();
-    if (info == "-ISBN=") {
-        if (remain.size() > 20 || remain.empty()) throw error();  //判断ISBN合法性
-        for (char & j : info) {
-            if (!Visible(j)) throw error();
-        }
-        book_file.show_ISBN(remain.c_str());
-    } else if (info == "-name=" || info == "-author=" || info == "-keyword=") {
-        if (!(remain.front() == '"' && remain.back() == '"')) throw error();
-        remain.erase(0,1);
-        remain.erase(remain.size() - 1,1);  //去掉双引号
-        if (remain.size() > 60 || remain.empty()) throw error();
-        for (char & i : remain) {
-            if (!Visible(i) || i == '"') throw error();
-        }
-        if (info == "-name=") {
-            book_file.show_name(remain.c_str());
-        }else if (info == "-author=") {
-            book_file.show_author(remain.c_str());
-        }else {
-            for (char i: remain) if (i == '|') throw error();  //如果出现多个关键词，则操作失败
-            book_file.show_keyword(remain.c_str());
-        }
     }else {
-        throw error();
+        bool flag = false;
+        for (int i = 0; i < instruct[1].size(); ++i) {
+            if (instruct[1][i] == '=') {
+                flag = true;  //判断是否有等号出现
+                info = std::string(instruct[1], 0, i + 1);
+                remain = std::string(instruct[1], i + 1);
+                break;
+            }
+        }
+        if (!flag) throw error();
+        if (info == "-ISBN=") {
+            if (remain.size() > 20 || remain.empty()) throw error();  //判断ISBN合法性
+            for (char &j: info) {
+                if (!Visible(j)) throw error();
+            }
+            book_file.show_ISBN(remain.c_str());
+        } else if (info == "-name=" || info == "-author=" || info == "-keyword=") {
+            if (!(remain.front() == '"' && remain.back() == '"')) throw error();
+            remain.erase(0, 1);
+            remain.erase(remain.size() - 1, 1);  //去掉双引号
+            if (remain.size() > 60 || remain.empty()) throw error();
+            for (char &i: remain) {
+                if (!Visible(i) || i == '"') throw error();
+            }
+            if (info == "-name=") {
+                book_file.show_name(remain.c_str());
+            } else if (info == "-author=") {
+                book_file.show_author(remain.c_str());
+            } else {
+                for (char i: remain) if (i == '|') throw error();  //如果出现多个关键词，则操作失败
+                book_file.show_keyword(remain.c_str());
+            }
+        } else {
+            throw error();
+        }
     }
 }
 
@@ -294,8 +298,9 @@ void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogSt
         } else {
             transaction_log.Show(count);
         }
+    }else{
+        throw error();
     }
-    throw error();
 }
 
 void modify(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,BookFile &book_file){

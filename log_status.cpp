@@ -44,7 +44,7 @@ void LogStatus::Select(const char *ISBN, BookFile &book_file) {
         strcpy(temp_book.author,"");
         strcpy(temp_book.org_keywords,"");
         strcpy(temp_book.name,"");
-        temp_book.price=-1;
+        temp_book.price=0;
         temp_book.quantity=0;
         book_file.iof.seekp(0,std::fstream ::end);
         int new_book_num=book_file.iof.tellp();
