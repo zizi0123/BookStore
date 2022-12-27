@@ -10,20 +10,9 @@
 #include <cstring>
 #include <cctype>
 
-class TokenScanner{
-public:
-    TokenScanner()=default;
-//    TokenScanner(std::string str);
-    ~TokenScanner()=default;
-//
-//    void setInput(std::string str);
-//
-//    bool HasMoreTokens();
-//
-//    std::string NextToken();
-private:
-    std::string original_str;
-};
+int DoubleStringToInt(const std::string &s);    //为了防止丢失精度，把所有浮点数都存成整数。
 
 std::vector<std::string>ProcessKeywords(const char *);
+
+//double StringtoDouble(const std::string &s);
 #endif //_BOOKSTORE_TOKENSCANNER_H

@@ -40,7 +40,8 @@ void BookFile::show_ISBN(const char *ISBN) {
         }
         for (const BookInfo &it: temp_set) {
             std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            printf("%.2f", it.price);
+            double real_price=(double)it.price/100.00;
+            printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
 
@@ -61,7 +62,8 @@ void BookFile::show_name(const char *name) {
         }
         for (const BookInfo &it: temp_set) {
             std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            printf("%.2f", it.price);
+            double real_price=(double)it.price/100.00;
+            printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
 
@@ -82,7 +84,8 @@ void BookFile::show_author(const char *author) {
         }
         for (const BookInfo &it: temp_set) {
             std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            printf("%.2f", it.price);
+            double real_price=(double)it.price/100.00;
+            printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
 
@@ -103,7 +106,8 @@ void BookFile::show_keyword(const char *keyword) {
         }
         for (const BookInfo &it: temp_set) {
             std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            printf("%.2f", it.price);
+            double real_price=(double)it.price/100.00;
+            printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
     } else {
@@ -118,7 +122,8 @@ void BookFile::show_all() {
         iof.seekg(i);
         iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
         std::cout << temp_book.ISBN << '\t' << temp_book.name << '\t' << temp_book.author << '\t'<< temp_book.org_keywords << '\t';
-        printf("%.2f", temp_book.price);
+        double real_price=(double)temp_book.price/100.00;
+        printf("%.2f", real_price);
         std::cout << '\t' << temp_book.quantity << '\n';
     }
 }
@@ -136,8 +141,9 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
         temp.quantity -= quantity;
         iof.seekp(num_vec[0]);
         iof.write(reinterpret_cast<char *>(&temp), sizeof(BookInfo));
-        double earn = (double) quantity * temp.price;
-        printf("%.2f\n",earn);
+        int earn =  quantity * temp.price;
+        double real_earn=(double)earn/100.00;
+        printf("%.2f\n",real_earn);
         transaction_log.earn(earn);
     } else {
         std::cout << "Invalid\n";
@@ -206,16 +212,16 @@ void BookFile::modify_keyword(const char *keyword, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
 }
 
-void BookFile::modify_price(double prize, LogStatus &log_status) {
+void BookFile::modify_price(int price, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
-    temp_book.price = prize;
+    temp_book.price = price;
     iof.seekp(log_status.login.back().booknum);
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
 }
 
-void BookFile::import(int quantity, double cost, LogStatus &log_status, TransactionLog &transaction_log) {
+void BookFile::import(int quantity, int cost, LogStatus &log_status, TransactionLog &transaction_log) {
     if (log_status.login.back().booknum == -1) {   //如果未选中图书则操作失败
         std::cout << "Invalid\n";
         return;

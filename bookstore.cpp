@@ -23,7 +23,6 @@ inline bool LetterNum_(const char &x); //判断是否是只有字母或数字或
 
 inline bool Visible(const char &x); //判断是都均为可见ASCII字符  Username
 
-double StringtoDouble(const std::string &s);
 
 void su(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, AccountFile &account_file);
 
@@ -375,7 +374,7 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
         } else if (info == "-price=") {
             if (if_modify[4]) throw error();
             if (remain[0] == '0' && remain[1] != '.' && remain != "0") throw error();  //去除前导0，并且排除price=0的情况
-            double price = StringtoDouble(remain);   //设置输入精度为两位小数
+            int price = DoubleStringToInt(remain);   //设置输入精度为两位小数
             book_file.modify_price(price, log_status);
             if_modify[4] = true;
         } else {
@@ -402,7 +401,7 @@ void import(const int &num, const std::vector<std::string> &instruct, LogStatus 
         if (!(('0' <= i && i <= '9') || i == '.'))
             throw error(); //需要满足每一个数都在0-9之间,或者是.
     }
-    double total_cost = stof(instruct[2]);
+    int total_cost = DoubleStringToInt(instruct[2]);
     if (total_cost == 0) throw error();
     book_file.import(quantity, total_cost, log_status, transaction_log);
 }
@@ -437,31 +436,3 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
     book_file.buy(instruct[1].c_str(), quantity, transaction_log);
 }
 
-double StringtoDouble(const std::string &s) {   //浮点数是用无穷二进制小数存储的，如果对浮点数进行很多操作，可能会丢失精度。
-    double x;
-    int a=0, b=0; //小数部分和整数部分
-    int num_dot = -1;  //小数点的位数
-    for (int i = 0; i < s.size() - 1; ++i) {
-        if (s[i] == '.') {
-            num_dot = i;
-            break;
-        }
-    }
-    double ans = 0;
-    if(num_dot!=-1) {  //说明有小数部分
-        int digit=1;
-        for (int i = num_dot - 1; i >= 0; --i) {  //将整数部分转成整数
-            a += (s[i]-'0') * digit;
-            digit *= 10;
-        }
-        digit=1;
-        for(int i=s.size()-1;i>num_dot;--i){  //将小数部分转成整数
-            b+=(s[i]-'0')*digit;
-            digit*=10;
-        }
-        ans=a+1.000/(pow(10,(s.size()-1-num_dot)))*b;
-    }else {  //说明输入的价格就是一个整数
-        ans = (double) stoi(s);
-    }
-    return ans;
-}

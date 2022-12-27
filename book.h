@@ -21,7 +21,7 @@ struct BookInfo{
     char org_keywords [61];
 //    std::vector<std::string>keywords;
     int quantity;
-    double price;
+    int price;
 };
 
 bool operator<(const BookInfo&x,const BookInfo&y);
@@ -40,8 +40,8 @@ public:
     void modify_name(const char *name,LogStatus&);
     void modify_author(const char *author,LogStatus&);
     void modify_keyword(const char *keyword,LogStatus&);
-    void modify_price(double prize,LogStatus&);
-    void import(int quantity,double cost,LogStatus&,TransactionLog &);
+    void modify_price(int price,LogStatus&);
+    void import(int quantity,int cost,LogStatus&,TransactionLog &);
     UnrollLink isbn_num ;
     UnrollLink bookname_num;
     UnrollLink author_num;
