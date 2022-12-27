@@ -1,85 +1,4 @@
-#include <iostream>
-#include "token_scanner.h"
-#include "log_status.h"
-#include "account.h"
-#include "book.h"
-#include "transaction_log.h"
-#include <string>
-#include <filesystem>
-#include <valarray>
-
-class error : public std::exception {
-
-};
-
-class quit : public std::exception {
-
-};
-
-void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_status, TransactionLog &transaction_log,
-                 const char *command);
-
-inline bool LetterNum_(const char &x); //判断是否是只有字母或数字或下划线  UserId,Password
-
-inline bool Visible(const char &x); //判断是都均为可见ASCII字符  Username
-
-
-void su(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, AccountFile &account_file);
-
-void RegisterUser(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file);
-
-void passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status);
-
-void
-useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status);
-
-void erase(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status);
-
-void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, TransactionLog &);
-
-void show(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file);
-
-void modify(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-            BookFile &book_file);
-
-void import(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-            BookFile &book_file, TransactionLog &);
-
-void select(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-            BookFile &book_file);
-
-void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-         BookFile &book_file, TransactionLog &);
-
-int main() {
-    std::filesystem::create_directory("file");
-//    freopen("../bookstore-testcases/complex/testcase2/4.in", "r", stdin);
-//    freopen("out", "w", stdout);
-    BookFile book_file;
-    AccountFile account_file;
-    LogStatus log_status;
-    TransactionLog transaction_log;
-    int count = 0;
-    while (true) {
-        count++;
-        char command[1000];
-        std::cin.getline(command, 1000);
-        if (!std::cin) break;
-//        std::cout<<count<<' ';
-        command[strlen(command)] = '\0';
-        try {
-            ProcessLine(book_file, account_file, log_status, transaction_log, command);
-        } catch (error) {
-            std::cout << "Invalid\n";
-        } catch (quit) {
-            break;
-        }
-//        std::cout<<'\n';
-    }
-
-
-}
-
+#include "bookstore.h"
 
 void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_status, TransactionLog &transaction_log,
                  const char *command) {
@@ -216,8 +135,7 @@ passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &ac
     }
 }
 
-void
-useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status) {
+void useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status) {
     if (num != 5) throw error();
     for (int i = 1; i <= 2; ++i) {
         if (instruct[i].size() > 30) throw error();
@@ -225,8 +143,7 @@ useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &a
             if (!LetterNum_(j)) throw error();
         }
     }
-    if (instruct[3][0] == '0') throw error();
-    int pri = stoi(instruct[3]);
+    int pri=StringToInt(instruct[3]);
     if (!(pri == 1 || pri == 3 || pri == 7)) throw error();
     if (instruct[4].size() > 30) throw error();
     for (const char &i: instruct[4]) {
@@ -307,7 +224,10 @@ void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogSt
             if (!('0' <= i && i <= '9')) throw error();
         }
         if (instruct[2][0] == '0' && instruct[2] != "0") throw error();
-        int count = stoi(instruct[2]);
+        for(const char &i:instruct[2]){
+            if(!('0'<=i && i<='9')) throw error();
+        }
+        int count=StringToInt(instruct[2]);
         if (count == 0) {
             std::cout << '\n';
         } else {
@@ -373,7 +293,6 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
             }
         } else if (info == "-price=") {
             if (if_modify[4]) throw error();
-            if (remain[0] == '0' && remain[1] != '.' && remain != "0") throw error();  //去除前导0，并且排除price=0的情况
             long long price = DoubleStringToll(remain);   //设置输入精度为两位小数
             book_file.modify_price(price, log_status);
             if_modify[4] = true;
@@ -391,18 +310,10 @@ void import(const int &num, const std::vector<std::string> &instruct, LogStatus 
         return;
     }
     if (num != 3) throw error();
-    for (char i: instruct[1]) {
-        if (!('0' <= i && i <= '9')) throw error(); //需要满足每一个数都在0-9之间；
-    }
-    if (instruct[1][0] == '0') throw error(); //去除前导0
-    int quantity = stoi(instruct[1]);
-    if (instruct[2][0] == '0' && instruct[2][1] != '.') throw error();
-    for (char i: instruct[2]) {
-        if (!(('0' <= i && i <= '9') || i == '.'))
-            throw error(); //需要满足每一个数都在0-9之间,或者是.
-    }
+    int quantity = StringToInt(instruct[1]);
+    if(quantity<=0) throw error();
     long long total_cost = DoubleStringToll(instruct[2]);
-    if (total_cost == 0) throw error();
+    if (total_cost <= 0) throw error();
     book_file.import(quantity, total_cost, log_status, transaction_log);
 }
 
@@ -432,7 +343,8 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
         if (!('0' <= i && i <= '9')) throw error(); //需要满足每一个数都在0-9之间；
     }
     if (instruct[2][0] == '0') throw error(); //去除前导0或者0
-    int quantity = stoi(instruct[2]);
+    int quantity = StringToInt(instruct[2]);
+    if(quantity<=0) throw error();
     book_file.buy(instruct[1].c_str(), quantity, transaction_log);
 }
 

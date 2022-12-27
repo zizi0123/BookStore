@@ -28,9 +28,7 @@ public:
     void Select(const char *ISBN,BookFile& book_file);  //让栈尾的用户选择图书
     std::vector<LogInfo> login;
 
-private:
 };
-
 
 
 #endif //_BOOKSTORE_LOGSTATUS_H
