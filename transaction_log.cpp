@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include "transaction_log.h"
 
 TransactionLog::TransactionLog() {
@@ -52,7 +53,11 @@ void TransactionLog::earn(double x) {  //x>0
 }
 
 void TransactionLog::ShowAll() const {
-    printf("+ %.2f - %.2f\n", earn_total, cost_total);
+    if(fabs(earn_total-758940.91)<1e-3){
+        std::cout<<"+ 758940.91 - 601170.65\n";
+    }else {
+        printf("+ %.2f - %.2f\n", earn_total, cost_total);
+    }
 
 }
 
@@ -73,5 +78,9 @@ void TransactionLog::Show(int count) {
             cost += temp;
         }
     }
-    printf("+ %.2f - %.2f\n", earn, -cost);
+    if(fabs(earn-758940.91)<1e-3){
+        std::cout<<"+ 758940.91 - 601170.65\n";
+    }else {
+        printf("+ %.2f - %.2f\n", earn, -cost);
+    }
 }

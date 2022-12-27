@@ -54,7 +54,7 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
 
 int main() {
     std::filesystem::create_directory("file");
-//    freopen("../bookstore-testcases/robust/testcase5.in", "r", stdin);
+//    freopen("../bookstore-testcases/complex/testcase4/2.in", "r", stdin);
 //    freopen("out", "w", stdout);
     BookFile book_file;
     AccountFile account_file;
@@ -437,25 +437,31 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
     book_file.buy(instruct[1].c_str(), quantity, transaction_log);
 }
 
-double StringtoDouble(const std::string &s) {
+double StringtoDouble(const std::string &s) {   //浮点数是用无穷二进制小数存储的，如果对浮点数进行很多操作，可能会丢失精度。
     double x;
-    bool if_dot= false;
+    int a=0, b=0; //小数部分和整数部分
+    int num_dot = -1;  //小数点的位数
     for (int i = 0; i < s.size() - 1; ++i) {
         if (s[i] == '.') {
-            x = 1.0 / pow(10, (s.size() - 1 - i));
-            if_dot= true;
+            num_dot = i;
+            break;
         }
     }
     double ans = 0;
-    if(if_dot) {  //说明有小数点
-        for (int i = s.size() - 1; i >= 0; --i) {
-            if (s[i] != '.') {
-                ans += x * (double) (s[i] - '0');
-                x *= 10.00;
-            }
+    if(num_dot!=-1) {  //说明有小数部分
+        int digit=1;
+        for (int i = num_dot - 1; i >= 0; --i) {  //将整数部分转成整数
+            a += (s[i]-'0') * digit;
+            digit *= 10;
         }
-    }else{  //说明输入的价格就是一个整数
-        ans=(double)stoi(s);
+        digit=1;
+        for(int i=s.size()-1;i>num_dot;--i){  //将小数部分转成整数
+            b+=(s[i]-'0')*digit;
+            digit*=10;
+        }
+        ans=a+1.000/(pow(10,(s.size()-1-num_dot)))*b;
+    }else {  //说明输入的价格就是一个整数
+        ans = (double) stoi(s);
     }
     return ans;
 }
