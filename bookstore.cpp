@@ -53,7 +53,7 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
 
 int main() {
     std::filesystem::create_directory("file");
-//    freopen("../bookstore-testcases/complex/testcase4/2.in", "r", stdin);
+//    freopen("../bookstore-testcases/complex/testcase2/4.in", "r", stdin);
 //    freopen("out", "w", stdout);
     BookFile book_file;
     AccountFile account_file;
@@ -374,7 +374,7 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
         } else if (info == "-price=") {
             if (if_modify[4]) throw error();
             if (remain[0] == '0' && remain[1] != '.' && remain != "0") throw error();  //去除前导0，并且排除price=0的情况
-            int price = DoubleStringToInt(remain);   //设置输入精度为两位小数
+            long long price = DoubleStringToll(remain);   //设置输入精度为两位小数
             book_file.modify_price(price, log_status);
             if_modify[4] = true;
         } else {
@@ -401,7 +401,7 @@ void import(const int &num, const std::vector<std::string> &instruct, LogStatus 
         if (!(('0' <= i && i <= '9') || i == '.'))
             throw error(); //需要满足每一个数都在0-9之间,或者是.
     }
-    int total_cost = DoubleStringToInt(instruct[2]);
+    long long total_cost = DoubleStringToll(instruct[2]);
     if (total_cost == 0) throw error();
     book_file.import(quantity, total_cost, log_status, transaction_log);
 }

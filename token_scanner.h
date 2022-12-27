@@ -10,7 +10,7 @@
 #include <cstring>
 #include <cctype>
 
-int DoubleStringToInt(const std::string &s);    //为了防止丢失精度，把所有浮点数都存成整数。
+long long DoubleStringToll(const std::string &s);    //为了防止丢失精度，把所有浮点数都存成整数。
 
 std::vector<std::string>ProcessKeywords(const char *);
 

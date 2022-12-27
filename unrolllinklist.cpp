@@ -2,7 +2,6 @@
 #include <algorithm>
 #include <utility>
 
-std::vector<long> recycle_bin; //储存现在是空的的位置
 
 
 data::data(const char *_index, int _value) : value(_value) {
@@ -37,14 +36,13 @@ bool operator==(const data &x, const data &y) {
 
 block_node::block_node(long _pos, int _size) : pos(_pos), size(_size) {}
 
-UnrollLink::UnrollLink(std::string name, std::string other_name) : filename(std::move(name)), other_information_file(std::move(other_name)){
+UnrollLink::UnrollLink(std::string name, std::string other_name) : filename(std::move(name)),
+                                                                   other_information_file(std::move(other_name)) {
     std::ifstream in1(filename), in2(other_information_file);
     if (!in2) {//如果没有打开成功，说明是初次使用系统，就创建这两个文件
         std::ofstream out1(filename), out2(other_information_file);
         block_size = 0;
-        recycle_size = 0;
         out2.write(reinterpret_cast<char *>(&block_size), sizeof(int));
-        out2.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
         out1.close();
         out2.close();
         iof.open(filename, std::fstream::in | std::fstream::out);
@@ -53,35 +51,23 @@ UnrollLink::UnrollLink(std::string name, std::string other_name) : filename(std:
     } else {
         in1.close();
         iof.open(filename, std::fstream::in | std::fstream::out);
-        recycle_bin.clear();
         in2.read(reinterpret_cast<char *>(&block_size), sizeof(int));//读入块的总数
         for (int i = 0; i < block_size; ++i) {
             block_node temp{};
             in2.read(reinterpret_cast<char *>(&temp), sizeof(block_node));
             head_list.push_back(temp);
         }
-        in2.read(reinterpret_cast<char *>(&recycle_size), sizeof(int));
-        long temp;
-        for (int i = 0; i < recycle_size; ++i) {
-            in2.read(reinterpret_cast<char *>(&temp), sizeof(long));
-            recycle_bin.push_back(temp);
-        }
         in2.close();
     }
 }
 
-UnrollLink::~UnrollLink()
-{
+UnrollLink::~UnrollLink() {
     std::ofstream out2(other_information_file);//用ofstream打开的时候会默认清空！
     out2.write(reinterpret_cast<char *>(&block_size), sizeof(int));
     for (int i = 0; i < block_size; ++i) {
         out2.write(reinterpret_cast<char *>(&head_list[i]), sizeof(block_node));
     }
-    recycle_size = (int)recycle_bin.size();
-    out2.write(reinterpret_cast<char *>(&recycle_size), sizeof(int));
-    for (long & i : recycle_bin) {
-        out2.write(reinterpret_cast<char *>(&i), sizeof(long));
-    }
+
     out2.close();
     iof.close();
 }
@@ -125,8 +111,8 @@ void UnrollLink::InsertInArray(const data &_data, const int &block_num) { //无�
         head_list[block_num].maximum = _data;
     } else {
         long proper_pos = std::lower_bound(temp, temp + head_list[block_num].size - 1, _data) - temp;  //pos是这个数应该被插到的位置
-        if(temp[proper_pos]==_data){   //防止出现插入相同的数据
-            delete []temp;
+        if (temp[proper_pos] == _data) {   //防止出现插入相同的数据
+            delete[]temp;
             return;
         }
         iof.seekp(head_list[block_num].pos + proper_pos * sizeof(data));
@@ -180,7 +166,6 @@ void UnrollLink::EraseInArray(long block_num, int position, data *temp) {
         head_list.erase(head_list.begin() + block_num);
         block_size--;
         delete[]temp;
-        recycle_bin.push_back(head_list[block_num].pos);
         return;
     }
     if (position == 0) head_list[block_num].minimum = temp[1]; //更新最小值
@@ -245,14 +230,14 @@ std::vector<int> UnrollLink::FindInBlock(const char *_index) {
 //        ans += " ";
 //    }
 //    ans += "\n";
-//    return ans;
+//    return ans;   为了应用于bookstore,删掉这个部分
 }
 
 std::vector<int> UnrollLink::FindBlockNumFind(const char *_index) {
     std::vector<int> ans;
     for (int i = 0; i < head_list.size(); ++i) {
-        if ((strcmp(head_list[i].minimum.index, _index) <= 0 && strcmp(head_list[i].maximum.index, _index) >= 0)||
-            strcmp(_index,"")==0) {
+        if ((strcmp(head_list[i].minimum.index, _index) <= 0 && strcmp(head_list[i].maximum.index, _index) >= 0) ||
+            strcmp(_index, "") == 0) {
             ans.push_back(i);
         }
     }
@@ -266,7 +251,7 @@ std::vector<int> UnrollLink::FindInArray(const std::vector<int> &block_num_vec, 
         data temp{};
         for (int i = 0; i < head_list[it].size; ++i) {
             iof.read(reinterpret_cast<char *>(&temp), sizeof(data));
-            if (strcmp(temp.index, index) == 0 || strcmp(index,"")==0) {
+            if (strcmp(temp.index, index) == 0 || strcmp(index, "") == 0) {
                 ans.push_back(temp.value);
             }
         }
@@ -288,20 +273,15 @@ void UnrollLink::BlockMerge(const long &block_num) {  //将第block_num与第blo
     delete[]temp;
     head_list[block_num].size += head_list[block_num + 1].size;
     head_list[block_num].maximum = head_list[block_num + 1].maximum;
-    recycle_bin.push_back(head_list[block_num + 1].pos);
     head_list.erase(head_list.begin() + block_num + 1);
     --block_size;
 }
 
-void UnrollLink::BlockSplit(const long &position) {  //在第position个块的后面新插入一个块,给第position个留下minsize个元素，从size-minsize开始的元素赋给y
+void
+UnrollLink::BlockSplit(const long &position) {  //在第position个块的后面新插入一个块,给第position个留下minsize个元素，从size-minsize开始的元素赋给y
     long y_pos; //确定y的数组的起始位置
-    if (!recycle_bin.empty()) {
-        y_pos = recycle_bin.back();
-        recycle_bin.pop_back();
-    } else {
-        iof.seekg(sizeof(data) * block_size * maxsize);
-        y_pos = iof.tellg();
-    }
+    iof.seekg(sizeof(data) * block_size * maxsize);
+    y_pos = iof.tellg();
     block_size++;
     block_node y(y_pos, maxsize - minsize); //需要新插入的块
     data this_max;

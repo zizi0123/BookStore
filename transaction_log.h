@@ -12,15 +12,15 @@ class TransactionLog{
 public:
     TransactionLog();
     ~TransactionLog();
-    void cost(int); //negative
-    void earn(int); //positive
+    void cost(long long); //negative
+    void earn(long long); //positive
     void ShowAll() const;
     void Show(int count);
 private:
     int transaction_num;
     std::fstream iof;
-    int total;
-    int earn_total;  //positive
-    int cost_total;  //positive
+    long long total;
+    long long earn_total;  //positive
+    long long cost_total;  //positive
 };
 #endif //_BOOKSTORE_TRANSACTIONLOG_H

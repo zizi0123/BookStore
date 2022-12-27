@@ -95,6 +95,7 @@ void BookFile::show_author(const char *author) {
 }
 
 void BookFile::show_keyword(const char *keyword) {
+
     std::vector<int> num_vec = keyword_num.FindInBlock(keyword);
     if (!num_vec.empty()) {
         std::set<BookInfo> temp_set;
@@ -141,7 +142,7 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
         temp.quantity -= quantity;
         iof.seekp(num_vec[0]);
         iof.write(reinterpret_cast<char *>(&temp), sizeof(BookInfo));
-        int earn =  quantity * temp.price;
+        long long earn =  (long long)quantity * (long long)temp.price;
         double real_earn=(double)earn/100.00;
         printf("%.2f\n",real_earn);
         transaction_log.earn(earn);
@@ -192,14 +193,14 @@ void BookFile::modify_author(const char *author, LogStatus &log_status) {
 }
 
 void BookFile::modify_keyword(const char *keyword, LogStatus &log_status) {
-    BookInfo temp_book{};
-    iof.seekg(log_status.login.back().booknum);
-    iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
     std::vector<std::string> keyword_vec = ProcessKeywords(keyword);
     if (keyword_vec.empty()) {  //确保更新的关键词信息是合法的
         std::cout << "Invalid\n";
         return;
     }
+    BookInfo temp_book{};
+    iof.seekg(log_status.login.back().booknum);
+    iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
     std::vector<std::string> temp_key_vec = ProcessKeywords(temp_book.org_keywords);
     for (std::string &it: temp_key_vec) {  //开始操作：删去所有本来的关键词
         keyword_num.EraseInBlock(it.c_str(), log_status.login.back().booknum);
@@ -221,7 +222,7 @@ void BookFile::modify_price(int price, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
 }
 
-void BookFile::import(int quantity, int cost, LogStatus &log_status, TransactionLog &transaction_log) {
+void BookFile::import(int quantity, long long cost, LogStatus &log_status, TransactionLog &transaction_log) {
     if (log_status.login.back().booknum == -1) {   //如果未选中图书则操作失败
         std::cout << "Invalid\n";
         return;

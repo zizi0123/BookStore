@@ -53,7 +53,6 @@ private:
     const std::string filename;
     const std::string other_information_file;
     int block_size;
-    int recycle_size;
     std::vector<block_node> head_list;
     std::fstream iof;
 

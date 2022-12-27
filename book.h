@@ -40,8 +40,8 @@ public:
     void modify_name(const char *name,LogStatus&);
     void modify_author(const char *author,LogStatus&);
     void modify_keyword(const char *keyword,LogStatus&);
-    void modify_price(int price,LogStatus&);
-    void import(int quantity,int cost,LogStatus&,TransactionLog &);
+    void modify_price( int price,LogStatus&);
+    void import(int quantity,long long cost,LogStatus&,TransactionLog &);
     UnrollLink isbn_num ;
     UnrollLink bookname_num;
     UnrollLink author_num;
