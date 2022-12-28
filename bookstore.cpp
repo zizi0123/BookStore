@@ -240,12 +240,10 @@ void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogSt
 
 void modify(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file) {
     if (log_status.login.empty() || log_status.login.back().priority < 3) {  //要求目前登录栈栈尾的用户权限大于3
-        std::cout << "Invalid\n";
-        return;
+        throw error();
     }
     if (log_status.login.back().booknum == -1) {   //如果未选中图书则操作失败
-        std::cout << "Invalid\n";
-        return;
+        throw error();
     }
     bool if_modify[5] = {false, false, false, false, false};
     if (instruct.size() == 1) throw error();
@@ -269,7 +267,7 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
                 if (!Visible(j)) throw error();
             }
             if_modify[0] = true;
-            book_file.modify_ISBN(remain.c_str(), log_status);
+            book_file.TryModifyISBN(remain.c_str(), log_status);
         } else if (info == "-name=" || info == "-author=" || info == "-keyword=") {
             if (!(remain.front() == '"' && remain.back() == '"')) throw error();
             remain.erase(0, 1);
@@ -280,26 +278,54 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
             }
             if (info == "-name=") {
                 if (if_modify[1]) throw error();
-                book_file.modify_name(remain.c_str(), log_status);
+                book_file.TryModifyname(remain.c_str(), log_status);
                 if_modify[1] = true;
             } else if (info == "-author=") {
                 if (if_modify[2]) throw error();
-                book_file.modify_author(remain.c_str(), log_status);
+                book_file.TryModifyauthor(remain.c_str(), log_status);
                 if_modify[2] = true;
             } else {
                 if (if_modify[3]) throw error();
-                book_file.modify_keyword(remain.c_str(), log_status);
+                book_file.TryModifykeyword(remain.c_str(), log_status);
                 if_modify[3] = true;
             }
         } else if (info == "-price=") {
             if (if_modify[4]) throw error();
             long long price = DoubleStringToll(remain);   //设置输入精度为两位小数
-            book_file.modify_price(price, log_status);
+            book_file.TryModifyprice(price, log_status);
             if_modify[4] = true;
         } else {
             throw error();
         }
     }
+    for (int i = 1; i < instruct.size(); ++i) {
+        std::string info;  //ISBN/NAME/author/keyword/Price
+        std::string remain;
+        for (int j = 0; j < instruct[i].size(); ++j) {
+            if (instruct[i][j] == '=') {
+                info = std::string(instruct[i], 0, j + 1);
+                remain = std::string(instruct[i], j + 1);
+                break;
+            }
+        }
+        if (info == "-ISBN=") {
+            book_file.ModifyISBN(remain.c_str(), log_status);
+        } else if (info == "-name=" || info == "-author=" || info == "-keyword=") {
+            remain.erase(0, 1);
+            remain.erase(remain.size() - 1, 1);  //去掉双引号
+            if (info == "-name=") {
+                book_file.Modifyname(remain.c_str(), log_status);
+            } else if (info == "-author=") {
+                book_file.Modifyauthor(remain.c_str(), log_status);
+            } else {
+                book_file.Modifykeyword(remain.c_str(), log_status);
+            }
+        } else if (info == "-price=") {
+            long long price = DoubleStringToll(remain);   //设置输入精度为两位小数
+            book_file.Modifyprice(price, log_status);
+        }
+    }
+
 }
 
 

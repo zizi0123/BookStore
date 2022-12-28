@@ -95,7 +95,6 @@ void BookFile::show_author(const char *author) {
 }
 
 void BookFile::show_keyword(const char *keyword) {
-
     std::vector<int> num_vec = keyword_num.FindInBlock(keyword);
     if (!num_vec.empty()) {
         std::set<BookInfo> temp_set;
@@ -142,7 +141,7 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
         temp.quantity -= quantity;
         iof.seekp(num_vec[0]);
         iof.write(reinterpret_cast<char *>(&temp), sizeof(BookInfo));
-        long long earn =  (long long)quantity * (long long)temp.price;
+        long long earn =  (long long)quantity * temp.price;
         double real_earn=(double)earn/100.00;
         printf("%.2f\n",real_earn);
         transaction_log.earn(earn);
@@ -151,18 +150,10 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
     }
 }
 
-void BookFile::modify_ISBN(const char *ISBN, LogStatus &log_status) {
+void BookFile::ModifyISBN(const char *ISBN, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
-    if (strcmp(temp_book.ISBN, ISBN) == 0) {   //不允许将ISBN修改为原有的ISBN
-        std::cout << "Invalid\n";
-        return;
-    }
-    if(!isbn_num.FindInBlock(ISBN).empty()){  //任何两本书的ISBN不能重复
-        std::cout << "Invalid\n";
-        return;
-    }
     isbn_num.EraseInBlock(temp_book.ISBN, log_status.login.back().booknum);//修改块状链表中的内容
     isbn_num.InsertInBlock(ISBN, log_status.login.back().booknum);
     strcpy(temp_book.ISBN, ISBN);
@@ -170,7 +161,7 @@ void BookFile::modify_ISBN(const char *ISBN, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));  //修改book_file的内容
 }
 
-void BookFile::modify_name(const char *name, LogStatus &log_status) {
+void BookFile::Modifyname(const char *name, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
@@ -181,7 +172,7 @@ void BookFile::modify_name(const char *name, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));  //修改book_file中的内容
 }
 
-void BookFile::modify_author(const char *author, LogStatus &log_status) {
+void BookFile::Modifyauthor(const char *author, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
@@ -192,12 +183,8 @@ void BookFile::modify_author(const char *author, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
 }
 
-void BookFile::modify_keyword(const char *keyword, LogStatus &log_status) {
+void BookFile::Modifykeyword(const char *keyword, LogStatus &log_status) {
     std::vector<std::string> keyword_vec = ProcessKeywords(keyword);
-    if (keyword_vec.empty()) {  //确保更新的关键词信息是合法的
-        std::cout << "Invalid\n";
-        return;
-    }
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
@@ -213,7 +200,7 @@ void BookFile::modify_keyword(const char *keyword, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
 }
 
-void BookFile::modify_price(int price, LogStatus &log_status) {
+void BookFile::Modifyprice(long long price, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
@@ -234,6 +221,36 @@ void BookFile::import(int quantity, long long cost, LogStatus &log_status, Trans
     iof.seekp(log_status.login.back().booknum);
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
     transaction_log.cost(cost);
+}
+
+void BookFile::TryModifyISBN(const char *ISBN, LogStatus & log_status) {
+    BookInfo temp_book{};
+    iof.seekg(log_status.login.back().booknum);
+    iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
+    if (strcmp(temp_book.ISBN, ISBN) == 0) {   //不允许将ISBN修改为原有的ISBN
+        throw error();
+    }
+    if(!isbn_num.FindInBlock(ISBN).empty()){  //任何两本书的ISBN不能重复
+        throw error();
+    }
+}
+
+void BookFile::TryModifyname(const char *name, LogStatus &log_status) {
+}
+
+void BookFile::TryModifyauthor(const char *author, LogStatus & log_status) {
+
+}
+
+void BookFile::TryModifykeyword(const char *keyword, LogStatus & log_status) {
+    std::vector<std::string> keyword_vec = ProcessKeywords(keyword);
+    if (keyword_vec.empty()) {  //确保更新的关键词信息是合法的
+        throw error();
+    }
+}
+
+void BookFile::TryModifyprice(long long price, LogStatus & log_status) {
+
 }
 
 

@@ -9,6 +9,7 @@
 #include "log_status.h"
 #include "token_scanner.h"
 #include "transaction_log.h"
+#include "bookstore.h"
 
 class LogStatus;
 class AccountFile;
@@ -21,7 +22,7 @@ struct BookInfo{
     char org_keywords [61];
 //    std::vector<std::string>keywords;
     int quantity;
-    int price;
+    long long price;
 };
 
 bool operator<(const BookInfo&x,const BookInfo&y);
@@ -36,11 +37,16 @@ public:
     void show_all();
 //    std::vector<int> isbn_to_num(const char *);
     void buy(const char *ISBN,const int &quantity,TransactionLog &);
-    void modify_ISBN(const char *ISBN,LogStatus& );
-    void modify_name(const char *name,LogStatus&);
-    void modify_author(const char *author,LogStatus&);
-    void modify_keyword(const char *keyword,LogStatus&);
-    void modify_price( int price,LogStatus&);
+    void TryModifyISBN(const char *ISBN,LogStatus& );
+    void TryModifyname(const char *name,LogStatus&);
+    void TryModifyauthor(const char *author,LogStatus&);
+    void TryModifykeyword(const char *keyword,LogStatus&);
+    void TryModifyprice( long long price,LogStatus&);
+    void ModifyISBN(const char *ISBN,LogStatus& );
+    void Modifyname(const char *name,LogStatus&);
+    void Modifyauthor(const char *author,LogStatus&);
+    void Modifykeyword(const char *keyword,LogStatus&);
+    void Modifyprice( long long price,LogStatus&);
     void import(int quantity,long long cost,LogStatus&,TransactionLog &);
     UnrollLink isbn_num ;
     UnrollLink bookname_num;
