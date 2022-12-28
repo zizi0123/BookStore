@@ -1,6 +1,6 @@
-#include "log_status.h"
+#include "status.h"
 
-void LogStatus::SwitchUser(const char *UserId,AccountFile& account_file,const char *password) {
+void LogStatus::SwitchUser(const char *UserId,AccountFile& account_file,TransactionLog &transaction_log,const char *password) {
     LogInfo temp{};
     AccountInfo temp_account{};
     std::vector<int> account_num=account_file.id_num.FindInBlock(UserId);
@@ -26,12 +26,29 @@ void LogStatus::SwitchUser(const char *UserId,AccountFile& account_file,const ch
     temp.booknum=-1;
     temp.usernum=account_num[0];
     login.push_back(temp);
+    std::string  info="User Login: Id= ";
+    info.append(temp_account.UserId);
+    info+=" name= ";
+    info.append(temp_account.name);
+    info+=" privilege= ";
+    info.push_back('0'+temp_account.priority);
+    transaction_log.AddRecord(info.c_str());
 }
 
-void LogStatus::logout() {
+void LogStatus::logout(TransactionLog &transaction_log,AccountFile&accountFile) {
     if(login.empty()){
         std::cout<<"Invalid\n";
     }else{
+        AccountInfo temp{};
+        accountFile.iof.seekg(login.back().usernum);
+        accountFile.iof.read(reinterpret_cast<char *>(&temp),sizeof (AccountInfo));
+        std::string  info="User Logout: Id= ";
+        info.append(temp.UserId);
+        info+=" name= ";
+        info.append(temp.name);
+        info+=" privilege= ";
+        info.push_back('0'+temp.priority);
+        transaction_log.AddRecord(info.c_str());
         login.pop_back();
     }
 }
@@ -49,11 +66,7 @@ void LogStatus::Select(const char *ISBN, BookFile &book_file) {
         book_file.iof.seekp(0,std::fstream ::end);
         int new_book_num=book_file.iof.tellp();
         book_file.iof.write(reinterpret_cast<char *>(&temp_book),sizeof (BookInfo));  //将新书的信息写入
-//        book_file.book_total_num++;
         book_file.isbn_num.InsertInBlock(ISBN,new_book_num);
-//        book_file.keyword_num.InsertInBlock("",new_book_num);
-//        book_file.author_num.InsertInBlock("",new_book_num);
-//        book_file.bookname_num.InsertInBlock("",new_book_num);
         login.back().booknum=new_book_num;
     }else{
         login.back().booknum=book_num[0];

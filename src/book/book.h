@@ -5,11 +5,11 @@
 #include <fstream>
 #include <iostream>
 #include <set>
-#include "unrolllinklist.h"
-#include "log_status.h"
-#include "token_scanner.h"
-#include "transaction_log.h"
-#include "bookstore.h"
+#include "../urll/urll.h"
+#include "../status/status.h"
+#include "../utils/token_scanner.h"
+#include "../log/log.h"
+#include "../bookstore.h"
 
 class LogStatus;
 class AccountFile;
@@ -35,8 +35,7 @@ public:
     void show_author(const char *author);
     void show_keyword(const char *keyword);
     void show_all();
-//    std::vector<int> isbn_to_num(const char *);
-    void buy(const char *ISBN,const int &quantity,TransactionLog &);
+    void buy(const char *ISBN,const int &quantity,TransactionLog &,LogStatus&,AccountFile&);
     void TryModifyISBN(const char *ISBN,LogStatus& );
     void TryModifyname(const char *name,LogStatus&);
     void TryModifyauthor(const char *author,LogStatus&);
@@ -47,7 +46,7 @@ public:
     void Modifyauthor(const char *author,LogStatus&);
     void Modifykeyword(const char *keyword,LogStatus&);
     void Modifyprice( long long price,LogStatus&);
-    void import(int quantity,long long cost,LogStatus&,TransactionLog &);
+    void import(int quantity,long long cost,LogStatus&,TransactionLog &,LogStatus&,AccountFile&);
     UnrollLink isbn_num ;
     UnrollLink bookname_num;
     UnrollLink author_num;

@@ -4,8 +4,8 @@
 
 int main() {
     std::filesystem::create_directory("file");
-//    freopen("../bookstore-testcases/basic/testcase5.in", "r", stdin);
-//    freopen("out", "w", stdout);
+    freopen("../bookstore-testcases/basic/testcase5.in", "r", stdin);
+    freopen("out", "w", stdout);
     BookFile book_file;
     AccountFile account_file;
     LogStatus log_status;

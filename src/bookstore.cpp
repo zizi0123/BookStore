@@ -2,7 +2,7 @@
 
 void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_status, TransactionLog &transaction_log,
                  const char *command) {
-    int start = 0, end = 0;
+    int start = 0, end ;
     int num = 0;  //切片出的指令数
     std::vector<std::string> instruct;
     bool flag_space = true;
@@ -29,76 +29,65 @@ void ProcessLine(BookFile &book_file, AccountFile &account_file, LogStatus &log_
             instruct.push_back(temp);
         }
     }
-    if (instruct[0] == "quit") {
-        if (num != 1) throw error();
-        throw quit();
-    } else if (instruct[0] == "exit") {
+    if (instruct[0] == "quit" || instruct[0] == "exit") {
         if (num != 1) throw error();
         throw quit();
     } else if (instruct[0] == "su") {
-        su(num, instruct, log_status, account_file);
+        su(num, instruct, log_status, account_file,transaction_log);
     } else if (instruct[0] == "logout") {
         if (num != 1) throw error();
-        log_status.logout();
+        log_status.logout(transaction_log,account_file);
     } else if (instruct[0] == "register") {
-        RegisterUser(num, instruct, account_file);
+        RegisterUser(num, instruct, account_file,transaction_log);
     } else if (instruct[0] == "passwd") {
-        passwd(num, instruct, account_file, log_status);
+        passwd(num, instruct, account_file, log_status,transaction_log);
     } else if (instruct[0] == "useradd") {
-        useradd(num, instruct, account_file, log_status);
+        useradd(num, instruct, account_file, log_status,transaction_log);
     } else if (instruct[0] == "delete") {
-        erase(num, instruct, account_file, log_status);
+        erase(num, instruct, account_file, log_status,transaction_log);
     } else if (instruct[0] == "show") {
         if (instruct.size() > 1 && instruct[1] == "finance") {
-            ShowFinance(num, instruct, log_status, transaction_log);
+            ShowFinance(num, instruct, log_status, transaction_log, account_file);
         } else {
-            show(num, instruct, log_status, book_file);
+            show(num, instruct, log_status, book_file,transaction_log, account_file);
         }
     } else if (instruct[0] == "buy") {
-        buy(num, instruct, log_status, book_file, transaction_log);
+        buy(num, instruct, log_status, book_file, transaction_log,account_file);
     } else if (instruct[0] == "select") {
         select(num, instruct, log_status, book_file);
     } else if (instruct[0] == "modify") {
-        modify(num, instruct, log_status, book_file);
+        modify(num, instruct, log_status, book_file,transaction_log, account_file,command);
     } else if (instruct[0] == "import") {
-        import(num, instruct, log_status, book_file, transaction_log);
+        import(num, instruct, log_status, book_file, transaction_log,account_file);
     } else if (instruct[0] == "log") {
-        //todo log
+        transaction_log.log(log_status);
     } else {
         throw error();
     }
 }
 
 
-inline bool LetterNum_(const char &x) {  //判断是否是只有字母或数字或下划线  UserId,Password
-    if ((int(x) >= 48 && int(x) <= 57) || (65 <= int(x) && int(x) <= 90) || (97 <= int(x) && int(x) <= 122) ||
-        int(x) == 95)
-        return true;
-    return false;
-}
 
-inline bool Visible(const char &x) { //判断是都均为可见ASCII字符
-    if (33 <= int(x) && int(x) <= 126) return true;
-    return false;
-}
 
-void su(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, AccountFile &account_file) {
+
+
+void su(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, AccountFile &account_file,TransactionLog &transaction_log) {
     if (instruct[1].size() > 30) throw error();  //最大长度30
     for (const char &i: instruct[1]) {
         if (!LetterNum_(i)) throw error();  //字母数字下划线是合法字符集
     }
     if (num == 2) {
-        log_status.SwitchUser(instruct[1].c_str(), account_file);
+        log_status.SwitchUser(instruct[1].c_str(), account_file,transaction_log);
     } else {
         if (instruct[2].size() > 30) throw error();  //最大长度30
         for (const char &i: instruct[2]) {
             if (!LetterNum_(i))throw error();  //字母数字下划线是合法字符集
         }
-        log_status.SwitchUser(instruct[1].c_str(), account_file, instruct[2].c_str());
+        log_status.SwitchUser(instruct[1].c_str(), account_file, transaction_log,instruct[2].c_str());
     }
 }
 
-void RegisterUser(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file) {
+void RegisterUser(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file,TransactionLog &transaction_log) {
     if (num != 4) throw error();
     for (int i = 1; i <= 2; ++i) {
         if (instruct[i].size() > 30) throw error();
@@ -110,11 +99,11 @@ void RegisterUser(const int &num, const std::vector<std::string> &instruct, Acco
     for (char j: instruct[3]) {
         if (!Visible(j)) throw error();
     }
-    account_file.RegisterAccount(instruct[1].c_str(), instruct[2].c_str(), instruct[3].c_str());
+    account_file.RegisterAccount(instruct[1].c_str(), instruct[2].c_str(), instruct[3].c_str(),transaction_log);
 }
 
 void
-passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status) {
+passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status,TransactionLog &transaction_log) {
     if (num > 4) throw error();
     if (num == 3) {
         for (int i = 1; i <= 2; ++i) {
@@ -123,7 +112,7 @@ passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &ac
                 if (!LetterNum_(j)) throw error();
             }
         }
-        account_file.ChangePassword(instruct[1].c_str(), instruct[2].c_str(), log_status);
+        account_file.ChangePassword(instruct[1].c_str(), instruct[2].c_str(), log_status,transaction_log);
     } else {
         for (int i = 1; i <= 3; ++i) {
             if (instruct[i].size() > 30) throw error();
@@ -131,11 +120,11 @@ passwd(const int &num, const std::vector<std::string> &instruct, AccountFile &ac
                 if (!LetterNum_(j)) throw error();
             }
         }
-        account_file.ChangePassword(instruct[1].c_str(), instruct[3].c_str(), log_status, instruct[2].c_str());
+        account_file.ChangePassword(instruct[1].c_str(), instruct[3].c_str(), log_status, transaction_log ,instruct[2].c_str());
     }
 }
 
-void useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status) {
+void useradd(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status,TransactionLog &transaction_log) {
     if (num != 5) throw error();
     for (int i = 1; i <= 2; ++i) {
         if (instruct[i].size() > 30) throw error();
@@ -150,10 +139,10 @@ void useradd(const int &num, const std::vector<std::string> &instruct, AccountFi
         if (!Visible(i)) throw error();
     }
     if (log_status.login.empty() || log_status.login.back().priority < 3) throw error();
-    account_file.CreatAccount(instruct[1].c_str(), instruct[2].c_str(), pri, instruct[4].c_str(), log_status);
+    account_file.CreatAccount(instruct[1].c_str(), instruct[2].c_str(), pri, instruct[4].c_str(), log_status,transaction_log);
 }
 
-void erase(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status) {
+void erase(const int &num, const std::vector<std::string> &instruct, AccountFile &account_file, LogStatus &log_status,TransactionLog &transaction_log) {
     if (num != 2) throw error();
     if (instruct[1].size() > 30) throw error();
     for (char i: instruct[1]) {
@@ -163,10 +152,10 @@ void erase(const int &num, const std::vector<std::string> &instruct, AccountFile
         std::cout << "Invalid\n";
         return;
     }
-    account_file.DeleteAccount(instruct[1].c_str(), log_status);
+    account_file.DeleteAccount(instruct[1].c_str(), log_status,transaction_log);
 }
 
-void show(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file) {
+void show(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file,TransactionLog &transaction_log, AccountFile &account_file) {
     std::string info;
     std::string remain;
     if (log_status.login.empty() || log_status.login.back().priority < 1) {  //要求目前登录栈栈尾的用户权限大于1
@@ -175,6 +164,12 @@ void show(const int &num, const std::vector<std::string> &instruct, LogStatus &l
     }
     if (num == 1) {
         book_file.show_all();
+        std::string _info="Show all book";
+        AccountInfo _operator{};
+        account_file.iof.seekg(log_status.login.back().usernum);
+        account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+        transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
+
     } else {
         bool flag = false;
         for (int i = 0; i < instruct[1].size(); ++i) {
@@ -192,6 +187,12 @@ void show(const int &num, const std::vector<std::string> &instruct, LogStatus &l
                 if (!Visible(j)) throw error();
             }
             book_file.show_ISBN(remain.c_str());
+            std::string _info="Show book with ISBN= ";
+            _info+=remain;
+            AccountInfo _operator{};
+            account_file.iof.seekg(log_status.login.back().usernum);
+            account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+            transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
         } else if (info == "-name=" || info == "-author=" || info == "-keyword=") {
             if (!(remain.front() == '"' && remain.back() == '"')) throw error();
             remain.erase(0, 1);
@@ -202,11 +203,29 @@ void show(const int &num, const std::vector<std::string> &instruct, LogStatus &l
             }
             if (info == "-name=") {
                 book_file.show_name(remain.c_str());
+                std::string _info="Show book with name= ";
+                _info+=remain;
+                AccountInfo _operator{};
+                account_file.iof.seekg(log_status.login.back().usernum);
+                account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+                transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
             } else if (info == "-author=") {
                 book_file.show_author(remain.c_str());
+                std::string _info="Show book with author= ";
+                _info+=remain;
+                AccountInfo _operator{};
+                account_file.iof.seekg(log_status.login.back().usernum);
+                account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+                transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
             } else {
                 for (char i: remain) if (i == '|') throw error();  //如果出现多个关键词，则操作失败
                 book_file.show_keyword(remain.c_str());
+                std::string _info="Show book with keyword= ";
+                _info+=remain;
+                AccountInfo _operator{};
+                account_file.iof.seekg(log_status.login.back().usernum);
+                account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+                transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
             }
         } else {
             throw error();
@@ -215,10 +234,16 @@ void show(const int &num, const std::vector<std::string> &instruct, LogStatus &l
 }
 
 void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-                 TransactionLog &transaction_log) {
+                 TransactionLog &transaction_log, AccountFile &account_file) {
     if (log_status.login.back().priority != 7) throw error();
     if (num == 2) {
         transaction_log.ShowAll();
+        std::string info="Show all finance";
+        AccountInfo _operator{};
+        account_file.iof.seekg(log_status.login.back().usernum);
+        account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+        transaction_log.AddRecord(info.c_str(), _operator.UserId, _operator.priority);
+
     } else if (num == 3) {
         for (char i: instruct[2]) {
             if (!('0' <= i && i <= '9')) throw error();
@@ -232,13 +257,19 @@ void ShowFinance(const int &num, const std::vector<std::string> &instruct, LogSt
             std::cout << '\n';
         } else {
             transaction_log.Show(count);
+            std::string info="Show recent finance";
+            info+= IntToString(count);
+            AccountInfo _operator{};
+            account_file.iof.seekg(log_status.login.back().usernum);
+            account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+            transaction_log.AddRecord(info.c_str(), _operator.UserId, _operator.priority);
         }
     } else {
         throw error();
     }
 }
 
-void modify(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file) {
+void modify(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status, BookFile &book_file,TransactionLog &transaction_log, AccountFile &account_file,const char* command) {
     if (log_status.login.empty() || log_status.login.back().priority < 3) {  //要求目前登录栈栈尾的用户权限大于3
         throw error();
     }
@@ -299,6 +330,12 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
         }
     }
     for (int i = 1; i < instruct.size(); ++i) {
+        std::string _info=std::string(command+6);
+        _info="Modify:"+_info;
+        AccountInfo _operator{};
+        account_file.iof.seekg(log_status.login.back().usernum);
+        account_file.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+        transaction_log.AddRecord(_info.c_str(), _operator.UserId, _operator.priority);
         std::string info;  //ISBN/NAME/author/keyword/Price
         std::string remain;
         for (int j = 0; j < instruct[i].size(); ++j) {
@@ -330,7 +367,7 @@ void modify(const int &num, const std::vector<std::string> &instruct, LogStatus 
 
 
 void import(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-            BookFile &book_file, TransactionLog &transaction_log) {
+            BookFile &book_file, TransactionLog &transaction_log,AccountFile &account_file) {
     if (log_status.login.empty() || log_status.login.back().priority < 3) {  //要求目前登录栈栈尾的用户权限大于3
         std::cout << "Invalid\n";
         return;
@@ -340,7 +377,7 @@ void import(const int &num, const std::vector<std::string> &instruct, LogStatus 
     if(quantity<=0) throw error();
     long long total_cost = DoubleStringToll(instruct[2]);
     if (total_cost <= 0) throw error();
-    book_file.import(quantity, total_cost, log_status, transaction_log);
+    book_file.import(quantity, total_cost, log_status, transaction_log,log_status,account_file);
 }
 
 
@@ -356,7 +393,7 @@ void select(const int &num, const std::vector<std::string> &instruct, LogStatus 
 }
 
 void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &log_status,
-         BookFile &book_file, TransactionLog &transaction_log) {
+         BookFile &book_file, TransactionLog &transaction_log,AccountFile &account_file) {
     if (log_status.login.empty() || log_status.login.back().priority < 1) {  //要求目前登录栈栈尾的用户权限大于1
         throw error();
     }
@@ -371,6 +408,6 @@ void buy(const int &num, const std::vector<std::string> &instruct, LogStatus &lo
     if (instruct[2][0] == '0') throw error(); //去除前导0或者0
     int quantity = StringToInt(instruct[2]);
     if(quantity<=0) throw error();
-    book_file.buy(instruct[1].c_str(), quantity, transaction_log);
+    book_file.buy(instruct[1].c_str(), quantity, transaction_log,log_status,account_file);
 }
 

@@ -1,6 +1,4 @@
-#include "book.h"//
-// Created by 86180 on 2022/12/22.
-//
+#include "book.h"
 
 bool operator<(const BookInfo &x, const BookInfo &y) {
     return strcmp(x.ISBN, y.ISBN) < 0;
@@ -39,8 +37,8 @@ void BookFile::show_ISBN(const char *ISBN) {
             temp_set.insert(temp);
         }
         for (const BookInfo &it: temp_set) {
-            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            double real_price=(double)it.price/100.00;
+            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t' << it.org_keywords << '\t';
+            double real_price = (double) it.price / 100.00;
             printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
@@ -61,8 +59,8 @@ void BookFile::show_name(const char *name) {
             temp_set.insert(temp);
         }
         for (const BookInfo &it: temp_set) {
-            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            double real_price=(double)it.price/100.00;
+            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t' << it.org_keywords << '\t';
+            double real_price = (double) it.price / 100.00;
             printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
@@ -83,8 +81,8 @@ void BookFile::show_author(const char *author) {
             temp_set.insert(temp);
         }
         for (const BookInfo &it: temp_set) {
-            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            double real_price=(double)it.price/100.00;
+            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t' << it.org_keywords << '\t';
+            double real_price = (double) it.price / 100.00;
             printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
@@ -105,8 +103,8 @@ void BookFile::show_keyword(const char *keyword) {
             temp_set.insert(temp);
         }
         for (const BookInfo &it: temp_set) {
-            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t'<< it.org_keywords << '\t';
-            double real_price=(double)it.price/100.00;
+            std::cout << it.ISBN << '\t' << it.name << '\t' << it.author << '\t' << it.org_keywords << '\t';
+            double real_price = (double) it.price / 100.00;
             printf("%.2f", real_price);
             std::cout << '\t' << it.quantity << '\n';
         }
@@ -116,19 +114,21 @@ void BookFile::show_keyword(const char *keyword) {
 }
 
 void BookFile::show_all() {
-    std::vector<int> pos=isbn_num.FindInBlock("");
-    for (int i :pos) {
+    std::vector<int> pos = isbn_num.FindInBlock("");
+    for (int i: pos) {
         BookInfo temp_book{};
         iof.seekg(i);
         iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo));
-        std::cout << temp_book.ISBN << '\t' << temp_book.name << '\t' << temp_book.author << '\t'<< temp_book.org_keywords << '\t';
-        double real_price=(double)temp_book.price/100.00;
+        std::cout << temp_book.ISBN << '\t' << temp_book.name << '\t' << temp_book.author << '\t'
+                  << temp_book.org_keywords << '\t';
+        double real_price = (double) temp_book.price / 100.00;
         printf("%.2f", real_price);
         std::cout << '\t' << temp_book.quantity << '\n';
     }
 }
 
-void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transaction_log) {
+void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transaction_log, LogStatus &log_status,
+                   AccountFile &accountFile) {
     std::vector<int> num_vec = isbn_num.FindInBlock(ISBN);
     if (num_vec.empty()) {
         std::cout << "Invalid\n";
@@ -141,10 +141,20 @@ void BookFile::buy(const char *ISBN, const int &quantity, TransactionLog &transa
         temp.quantity -= quantity;
         iof.seekp(num_vec[0]);
         iof.write(reinterpret_cast<char *>(&temp), sizeof(BookInfo));
-        long long earn =  (long long)quantity * temp.price;
-        double real_earn=(double)earn/100.00;
-        printf("%.2f\n",real_earn);
+        long long earn = (long long) quantity * temp.price;
+        double real_earn = (double) earn / 100.00;
+        printf("%.2f\n", real_earn);
         transaction_log.earn(earn);
+        AccountInfo _operator{};
+        accountFile.iof.seekg(log_status.login.back().usernum);
+        accountFile.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+        std::string info = "Book sold: ISBN= ";
+        info.append(ISBN);
+        info += " bookname= ";
+        info.append(temp.name);
+        info += " quantity= ";
+        info += IntToString(quantity);
+        transaction_log.AddRecord(info.c_str(), _operator.UserId, _operator.priority);
     } else {
         std::cout << "Invalid\n";
     }
@@ -209,7 +219,8 @@ void BookFile::Modifyprice(long long price, LogStatus &log_status) {
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
 }
 
-void BookFile::import(int quantity, long long cost, LogStatus &log_status, TransactionLog &transaction_log) {
+void BookFile::import(int quantity, long long cost, LogStatus &log_status, TransactionLog &transaction_log,
+                      LogStatus &logStatus, AccountFile &accountFile) {
     if (log_status.login.back().booknum == -1) {   //如果未选中图书则操作失败
         std::cout << "Invalid\n";
         return;
@@ -221,16 +232,26 @@ void BookFile::import(int quantity, long long cost, LogStatus &log_status, Trans
     iof.seekp(log_status.login.back().booknum);
     iof.write(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //写入更新后的图书信息
     transaction_log.cost(cost);
+    AccountInfo _operator{};
+    accountFile.iof.seekg(log_status.login.back().usernum);
+    accountFile.iof.read(reinterpret_cast<char *>(&_operator), sizeof(AccountInfo));
+    std::string info = "Book imported: ISBN= ";
+    info.append(temp_book.ISBN);
+    info += " bookname= ";
+    info.append(temp_book.name);
+    info += " quantity= ";
+    info += IntToString(quantity);
+    transaction_log.AddRecord(info.c_str(), _operator.UserId, _operator.priority);
 }
 
-void BookFile::TryModifyISBN(const char *ISBN, LogStatus & log_status) {
+void BookFile::TryModifyISBN(const char *ISBN, LogStatus &log_status) {
     BookInfo temp_book{};
     iof.seekg(log_status.login.back().booknum);
     iof.read(reinterpret_cast<char *>(&temp_book), sizeof(BookInfo)); //读入当前被选中的图书的信息
     if (strcmp(temp_book.ISBN, ISBN) == 0) {   //不允许将ISBN修改为原有的ISBN
         throw error();
     }
-    if(!isbn_num.FindInBlock(ISBN).empty()){  //任何两本书的ISBN不能重复
+    if (!isbn_num.FindInBlock(ISBN).empty()) {  //任何两本书的ISBN不能重复
         throw error();
     }
 }
@@ -238,18 +259,18 @@ void BookFile::TryModifyISBN(const char *ISBN, LogStatus & log_status) {
 void BookFile::TryModifyname(const char *name, LogStatus &log_status) {
 }
 
-void BookFile::TryModifyauthor(const char *author, LogStatus & log_status) {
+void BookFile::TryModifyauthor(const char *author, LogStatus &log_status) {
 
 }
 
-void BookFile::TryModifykeyword(const char *keyword, LogStatus & log_status) {
+void BookFile::TryModifykeyword(const char *keyword, LogStatus &log_status) {
     std::vector<std::string> keyword_vec = ProcessKeywords(keyword);
     if (keyword_vec.empty()) {  //确保更新的关键词信息是合法的
         throw error();
     }
 }
 
-void BookFile::TryModifyprice(long long price, LogStatus & log_status) {
+void BookFile::TryModifyprice(long long price, LogStatus &log_status) {
 
 }
 

@@ -6,12 +6,15 @@
 #define _BOOKSTORE_ACCOUNT_H
 #include <iostream>
 #include <fstream>
-#include "unrolllinklist.h"
-#include "log_status.h"
+#include <cstring>
+#include "../urll/urll.h"
+#include "../status/status.h"
+#include "../log/log.h"
 
 class LogStatus;
 class BookFile;
 class AccountFile;
+class TransactionLog;
 
 struct AccountInfo{
     char UserId[31];
@@ -26,10 +29,10 @@ public:
     UnrollLink id_num;
     AccountFile();
     ~AccountFile();
-    void RegisterAccount(const char *UserId,const char *password,const char *name);
-    void ChangePassword(const char *UserId, const char *new_password, LogStatus &log_status,const char *current_password="");
-    void CreatAccount(const char *UserId,const char *password,const int priority,const char *name,LogStatus &);
-    void DeleteAccount(const char *UserId,LogStatus &);
+    void RegisterAccount(const char *UserId,const char *password,const char *name,TransactionLog&);
+    void ChangePassword(const char *UserId, const char *new_password, LogStatus &log_status,TransactionLog&,const char *current_password="");
+    void CreatAccount(const char *UserId,const char *password,const int priority,const char *name,LogStatus &,TransactionLog&);
+    void DeleteAccount(const char *UserId,LogStatus &,TransactionLog&);
     std::fstream iof;
 private:
 };
