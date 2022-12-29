@@ -9,6 +9,6 @@ add_executable(code
         src/book/book.cpp
         src/account/account.cpp
         src/status/status.cpp
-        src/utils/token_scanner.cpp
+        src/utils/strlib.cpp
         src/log/log.cpp
         src/main.cpp)

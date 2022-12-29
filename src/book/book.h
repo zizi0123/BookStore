@@ -7,7 +7,7 @@
 #include <set>
 #include "../urll/urll.h"
 #include "../status/status.h"
-#include "../utils/token_scanner.h"
+#include "../utils/strlib.h"
 #include "../log/log.h"
 #include "../bookstore.h"
 
@@ -51,9 +51,7 @@ public:
     UnrollLink bookname_num;
     UnrollLink author_num;
     UnrollLink keyword_num;
-    std::fstream iof;   //读第num个位置的信息BookInfo
-//    int book_total_num; //书籍的总量
-private:
+    std::fstream iof;
 };
 
 

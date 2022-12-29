@@ -3,7 +3,7 @@
 #define _BOOKSTORE_BOOKSTORE_H
 
 #include <iostream>
-#include "utils/token_scanner.h"
+#include "utils/strlib.h"
 #include "status/status.h"
 #include "account/account.h"
 #include "book/book.h"

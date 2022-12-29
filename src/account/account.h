@@ -34,7 +34,6 @@ public:
     void CreatAccount(const char *UserId,const char *password,const int priority,const char *name,LogStatus &,TransactionLog&);
     void DeleteAccount(const char *UserId,LogStatus &,TransactionLog&);
     std::fstream iof;
-private:
 };
 
 #endif //_BOOKSTORE_ACCOUNT_H

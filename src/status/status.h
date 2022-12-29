@@ -27,7 +27,6 @@ public:
     void logout(TransactionLog &,AccountFile&);//撤销最后一次成功执行的 su 指令效果
     void Select(const char *ISBN,BookFile& book_file);  //让栈尾的用户选择图书
     std::vector<LogInfo> login;
-
 };
 
 
